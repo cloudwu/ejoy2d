@@ -35,7 +35,7 @@ undefined:
 
 mingw : TARGET := ej2d.exe
 mingw : CFLAGS += -I/usr/include -I/usr/local/include
-mingw : LDFLAGS += -L/usr/bin -lgdi32 -lglew32 -lopengl32 -L/usr/local/bin -llua52
+mingw : LDFLAGS += -L/usr/bin -lgdi32 -lglew32 -lopengl32 -L/usr/local/lib -llua
 mingw : SRC += mingw/window.c mingw/winfw.c mingw/winfont.c
 
 mingw : $(SRC) ej2d
