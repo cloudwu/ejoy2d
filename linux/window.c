@@ -100,12 +100,6 @@ init_window()
     glfwSetCursorPosCallback(window, cursor_position_callback);
 }
 
-// attribute index
-enum{
-ATTRIB_VERTEX,
-ATTRIB_COLOR,
-NUM_ATTRIBUTES
-};
 int
 main(int argc, char *argv[]) {
     uint32_t timestamp = 0;
@@ -115,66 +109,17 @@ main(int argc, char *argv[]) {
     ejoy2d_win_init(argc, argv);
 
     while (!glfwWindowShouldClose(window)) {
-        static const GLfloat squareVertices[] = {
-                -0.5f, -0.5f, 0.0f,
-                 0.5f, -0.5f, 0.0f,
-                -0.5f,  0.5f, 0.0f,
-                 0.5f,  0.5f, 0.0f
-        };
-
-        static const GLubyte squareColors[] = {
-                255, 255,   0, 255,
-                0,   255, 255, 255,
-                0,     0,   0,   0,
-                255,   0, 255, 255,
-        };
-         // Update attribute values
-        glClear(GL_COLOR_BUFFER_BIT);
-        glVertexAttribPointer(ATTRIB_VERTEX, 3, GL_FLOAT, 0, 0, squareVertices);
-        glEnableVertexAttribArray(ATTRIB_VERTEX);
-        glVertexAttribPointer(ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, 1, 0, squareColors);
-        glEnableVertexAttribArray(ATTRIB_COLOR);
-
-        glfwSwapBuffers(window);
-
-        //float ratio;
-        //int width, height;
-
-        //glfwGetFramebufferSize(window, &width, &height);
-        //ratio = width / (float) height;
-
-        //glViewport(0, 0, width, height);
-
-        //glMatrixMode(GL_PROJECTION);
-        //glLoadIdentity();
-        //glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-        //glMatrixMode(GL_MODELVIEW);
-
-        //glLoadIdentity();
-        //glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
-
-        //glBegin(GL_TRIANGLES);
-        //glColor3f(1.f, 0.f, 0.f);
-        //glVertex3f(-0.6f, -0.4f, 0.f);
-        //glColor3f(0.f, 1.f, 0.f);
-        //glVertex3f(0.6f, -0.4f, 0.f);
-        //glColor3f(0.f, 0.f, 1.f);
-        //glVertex3f(0.f, 0.6f, 0.f);
-        //glEnd();
-
         glfwPollEvents();
-      //      ejoy2d_win_update();
-      //      update_frame();
 
-      //  uint32_t old = timestamp;
-      //  timestamp= _gettime();
-      //  if (timestamp - old >= UPDATE_INTERVAL) {
-      //      ejoy2d_win_update();
-      //      update_frame();
-      //  }
-      //  else {
-      //      usleep(1000000000);
-      //  }
+        uint32_t old = timestamp;
+        timestamp= _gettime();
+        if (timestamp - old >= UPDATE_INTERVAL) {
+            ejoy2d_win_update();
+            update_frame();
+        }
+        else {
+            usleep(1000000000);
+        }
     }
     return 0;
 }
