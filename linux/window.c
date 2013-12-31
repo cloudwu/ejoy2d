@@ -1,8 +1,4 @@
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-#include <GL/glxew.h>
-#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 /* include some silly stuff */
 #include <stdio.h>
@@ -10,171 +6,176 @@
 #include <time.h>
 #include "winfw.h"
 
-#define UPDATE_INTERVAL 1       /* 10ms */
+#define UPDATE_INTERVAL 100000000       /* 10ms */
 
 void font_init();
 
-struct X_context {
-    Display *display;
-    int screen_num;
-    Window  wnd;
-};
-
-static GC gc;
-static GLXContext g_context = 0;
-struct X_context g_X;
-
-void init_x();
-void close_x();
-void redraw();
+static GLFWwindow* window;
+// Mouse position
+static int xpos = 0, ypos = 0;
 
 static uint32_t
 _gettime(void) {
-	uint32_t t;
+    uint32_t t;
 #if !defined(__APPLE__)
-	struct timespec ti;
-	clock_gettime(CLOCK_MONOTONIC, &ti);
-	t = (uint32_t)(ti.tv_sec & 0xffffff) * 100;
-	t += ti.tv_nsec / 10000000;
+    struct timespec ti;
+    clock_gettime(CLOCK_MONOTONIC, &ti);
+    t = (uint32_t)(ti.tv_sec & 0xffffff) * 100;
+    t += ti.tv_nsec / 10000000;
 #else
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	t = (uint32_t)(tv.tv_sec & 0xffffff) * 100;
-	t += tv.tv_usec / 10000;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    t = (uint32_t)(tv.tv_sec & 0xffffff) * 100;
+    t += tv.tv_usec / 10000;
 #endif
 
-	return t;
+    return t;
 }
 
 static void
 update_frame() {
-	ejoy2d_win_frame();
-    glXSwapBuffers(g_X.display, g_X.wnd);
+    ejoy2d_win_frame();
+    glfwSwapBuffers(window);
 }
 
-static int	
-glx_init(struct X_context *X)
+static void
+error_callback(int error, const char* description)
 {
-	XVisualInfo *vi;
-
-	int attrib[]={
-		GLX_RGBA, 
-		GLX_DOUBLEBUFFER, 
-		GLX_DEPTH_SIZE, 1,
-		GLX_STENCIL_SIZE, 1,
-		None
-	};
-
-	if (g_context)
-		return 0;
-
-	vi = glXChooseVisual( X->display, X->screen_num, attrib);
-	
-	if (vi==0) {
-		return 1;
-	}
-
-	g_context = glXCreateContext( X->display, vi ,  NULL , True);
-
-	if (g_context == 0) {
-		return 1;
-	}
-
-	if (!glXMakeCurrent(X->display, X->wnd, g_context )) {
-		g_context=NULL;
-		return 1;
-	}
-
-	return 0;
+    fputs(description, stderr);
 }
 
-void
-init_x() {
-    unsigned long black,white;
-    Display *dis;
-    int screen;
-    static Window win;
+static void 
+cursor_position_callback(GLFWwindow* window, double x, double y)
+{
+    // Remember cursor position
+    xpos = (int)x;
+    ypos = (int)y;
+}
 
-    dis=XOpenDisplay(NULL);
-    screen=DefaultScreen(dis);
-    black=BlackPixel(dis,screen);
-    white=WhitePixel(dis, screen);
+static void 
+mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button != GLFW_MOUSE_BUTTON_LEFT)
+        return;
 
-    
-    win=XCreateSimpleWindow(dis,DefaultRootWindow(dis),0,0,
-                            WIDTH, HEIGHT, 5,white, black);
-
-    XSetStandardProperties(dis,win,"ejoy2d",NULL,None,NULL,0,NULL);
-    XSelectInput(dis, win,
-                 ExposureMask|KeyPressMask|KeyReleaseMask
-                 |ButtonPressMask|ButtonReleaseMask|ButtonMotionMask);
-    gc=XCreateGC(dis, win, 0,0);        
-    XSetBackground(dis,gc,white);
-    XSetForeground(dis,gc,black);
-    XClearWindow(dis, win);
-    XMapRaised(dis, win);
-
-    g_X.display = dis;
-    g_X.screen_num = screen;
-    g_X.wnd = win;
-    
-    if (glx_init(&g_X)){
-        printf("glx init failed\n");
-        exit(1);
+    if (action == GLFW_PRESS) {
+        ejoy2d_win_touch(xpos, ypos, TOUCH_BEGIN);
     }
-    if ( glewInit() != GLEW_OK ) {
-        printf("glew init failed");
-		exit(1);
-	}
-};
-
-void close_x() {
-    Display *dis = g_X.display;
-    XFreeGC(dis, gc);
-    XDestroyWindow(dis, g_X.wnd);
-    XCloseDisplay(dis); 
-    exit(1);    
+    else if (action == GLFW_RELEASE) {
+        ejoy2d_win_touch(xpos,ypos,TOUCH_END);
+    }
+    else {
+        ejoy2d_win_touch(xpos,ypos,TOUCH_MOVE);
+    }
 }
 
+static void
+key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+        return;
+    }
+}
+
+static void
+init_window()
+{
+    glfwSetErrorCallback(error_callback);
+
+    if (!glfwInit())
+       exit(EXIT_FAILURE);
+
+    window = glfwCreateWindow(640, 480, "ejoy2d", NULL, NULL);
+    if (!window)
+    {
+       glfwTerminate();
+       exit(EXIT_FAILURE);
+    }
+
+    glfwMakeContextCurrent(window);
+
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+}
+
+// attribute index
+enum{
+ATTRIB_VERTEX,
+ATTRIB_COLOR,
+NUM_ATTRIBUTES
+};
 int
 main(int argc, char *argv[]) {
-    XEvent event;
     uint32_t timestamp = 0;
-    init_x();
-    font_init();
 
+    init_window();
+    font_init();
     ejoy2d_win_init(argc, argv);
 
-    for (;;) {
-        
-        while(XPending(g_X.display) > 0) {  
-            XNextEvent(g_X.display, &event);
-            if (XFilterEvent(&event,None))
-                continue;
-            switch (event.type) {
-            case Expose:
-                if (event.xexpose.count==0)
-                    update_frame();
-                break;
-            case ButtonPress:
-                ejoy2d_win_touch(event.xbutton.x, event.xbutton.y, TOUCH_BEGIN);
-                break;
-            case ButtonRelease:
-                ejoy2d_win_touch(event.xbutton.x,event.xbutton.y,TOUCH_END);
-                break;
-            case MotionNotify:
-                ejoy2d_win_touch(event.xbutton.x,event.xbutton.y,TOUCH_MOVE);
-                break;
-            }
-        }
+    while (!glfwWindowShouldClose(window)) {
+        static const GLfloat squareVertices[] = {
+                -0.5f, -0.5f, 0.0f,
+                 0.5f, -0.5f, 0.0f,
+                -0.5f,  0.5f, 0.0f,
+                 0.5f,  0.5f, 0.0f
+        };
 
-        uint32_t old = timestamp;
-        timestamp= _gettime();
-        if (timestamp - old >= UPDATE_INTERVAL) {
-            ejoy2d_win_update();
-            update_frame();
-        }
-        else
-            usleep(1000);
+        static const GLubyte squareColors[] = {
+                255, 255,   0, 255,
+                0,   255, 255, 255,
+                0,     0,   0,   0,
+                255,   0, 255, 255,
+        };
+         // Update attribute values
+        glClear(GL_COLOR_BUFFER_BIT);
+        glVertexAttribPointer(ATTRIB_VERTEX, 3, GL_FLOAT, 0, 0, squareVertices);
+        glEnableVertexAttribArray(ATTRIB_VERTEX);
+        glVertexAttribPointer(ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, 1, 0, squareColors);
+        glEnableVertexAttribArray(ATTRIB_COLOR);
+
+        glfwSwapBuffers(window);
+
+        //float ratio;
+        //int width, height;
+
+        //glfwGetFramebufferSize(window, &width, &height);
+        //ratio = width / (float) height;
+
+        //glViewport(0, 0, width, height);
+
+        //glMatrixMode(GL_PROJECTION);
+        //glLoadIdentity();
+        //glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+        //glMatrixMode(GL_MODELVIEW);
+
+        //glLoadIdentity();
+        //glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
+
+        //glBegin(GL_TRIANGLES);
+        //glColor3f(1.f, 0.f, 0.f);
+        //glVertex3f(-0.6f, -0.4f, 0.f);
+        //glColor3f(0.f, 1.f, 0.f);
+        //glVertex3f(0.6f, -0.4f, 0.f);
+        //glColor3f(0.f, 0.f, 1.f);
+        //glVertex3f(0.f, 0.6f, 0.f);
+        //glEnd();
+
+        glfwPollEvents();
+      //      ejoy2d_win_update();
+      //      update_frame();
+
+      //  uint32_t old = timestamp;
+      //  timestamp= _gettime();
+      //  if (timestamp - old >= UPDATE_INTERVAL) {
+      //      ejoy2d_win_update();
+      //      update_frame();
+      //  }
+      //  else {
+      //      usleep(1000000000);
+      //  }
     }
+    return 0;
 }
+
