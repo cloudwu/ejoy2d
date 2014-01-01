@@ -7,8 +7,6 @@
 #include "winfw.h"
 
 #define UPDATE_INTERVAL 1       /* 10ms */
-#define WINDOW_WIDTH    640     /* 窗口大小 */
-#define WINDOW_HEIGHT   480
 #define MOUSE_PRESS     1
 #define MOUSE_RELEASE   0
 
@@ -95,7 +93,7 @@ init_window()
 
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "ejoy2d", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "ejoy2d", NULL, NULL);
     if (!window)
     {
        glfwTerminate();

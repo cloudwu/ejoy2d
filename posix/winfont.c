@@ -8,7 +8,7 @@
 
 FT_Library  library;
 
-static const char* TTFONT = "/usr/share/fonts/wenquanyi/wqy-zenhei/wqy-zenhei.ttc";
+static const char* TTFONT = "/usr/share/fonts/truetype/XHei_Mono.Ubuntu.ttc";
 
 static void _fault(int errcode, const char * msg) {
     printf("err(%d): %s\n\n\t have a look at fterrdef.h\n",errcode, msg);

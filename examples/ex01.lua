@@ -11,6 +11,7 @@ local turret = obj.turret
 
 local obj2 = ej.sprite("sample","mine")
 obj2.resource.frame = 70
+obj2.label.text = "Hello World"
 
 local game = {}
 
@@ -28,6 +29,7 @@ function game.drawframe()
 end
 
 function game.touch(what, x, y)
+    print(what, x, y)
 end
 
 ej.start(game)
