@@ -1,5 +1,4 @@
 #include <GLFW/glfw3.h>
-#include <GL/glext.h>
 
 /* include some silly stuff */
 #include <stdio.h>
@@ -48,7 +47,7 @@ error_callback(int error, const char* description)
     fputs(description, stderr);
 }
 
-static void 
+static void
 cursor_position_callback(GLFWwindow* window, double x, double y)
 {
     if (mouse_press==MOUSE_PRESS) {
@@ -56,7 +55,7 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
     }
 }
 
-static void 
+static void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button != GLFW_MOUSE_BUTTON_LEFT)
@@ -94,6 +93,8 @@ init_window()
     if (!glfwInit())
        exit(EXIT_FAILURE);
 
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
     window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "ejoy2d", NULL, NULL);
     if (!window)
     {
@@ -106,8 +107,6 @@ init_window()
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
-
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 int
@@ -117,6 +116,13 @@ main(int argc, char *argv[]) {
     init_window();
     font_init();
     ejoy2d_win_init(argc, argv);
+
+    const GLubyte* name = glGetString(GL_VENDOR);    
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    const GLubyte* OpenGLVersion =glGetString(GL_VERSION); 
+    printf("OpenGL Hardware Vendor : %s\n", name);
+    printf("Renderer identifier    : %s\n", renderer);
+    printf("OpenGL Version         : %s\n", OpenGLVersion);
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
