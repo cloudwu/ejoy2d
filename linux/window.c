@@ -6,7 +6,7 @@
 #include <time.h>
 #include "winfw.h"
 
-#define UPDATE_INTERVAL 100000000       /* 10ms */
+#define UPDATE_INTERVAL 1       /* 10ms */
 
 void font_init();
 
@@ -118,7 +118,7 @@ main(int argc, char *argv[]) {
             update_frame();
         }
         else {
-            usleep(1000000000);
+            usleep(1000);
         }
     }
     return 0;
