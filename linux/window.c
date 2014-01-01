@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <GL/glext.h>
 
 /* include some silly stuff */
 #include <stdio.h>
@@ -7,12 +8,15 @@
 #include "winfw.h"
 
 #define UPDATE_INTERVAL 1       /* 10ms */
+#define WINDOW_WIDTH    640     /* 窗口大小 */
+#define WINDOW_HEIGHT   480
+#define MOUSE_PRESS     1
+#define MOUSE_RELEASE   0
 
 void font_init();
 
 static GLFWwindow* window;
-// Mouse position
-static int xpos = 0, ypos = 0;
+static int mouse_press = MOUSE_RELEASE;
 
 static uint32_t
 _gettime(void) {
@@ -47,9 +51,9 @@ error_callback(int error, const char* description)
 static void 
 cursor_position_callback(GLFWwindow* window, double x, double y)
 {
-    // Remember cursor position
-    xpos = (int)x;
-    ypos = (int)y;
+    if (mouse_press==MOUSE_PRESS) {
+        ejoy2d_win_touch((int)x,(int)y,TOUCH_MOVE);
+    }
 }
 
 static void 
@@ -58,14 +62,18 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     if (button != GLFW_MOUSE_BUTTON_LEFT)
         return;
 
+    double xpos = 0 ;
+    double ypos = 0;
+    glfwGetCursorPos(window,&xpos,&ypos);
+    int x = (int)xpos;
+    int y = (int)ypos;
     if (action == GLFW_PRESS) {
-        ejoy2d_win_touch(xpos, ypos, TOUCH_BEGIN);
+        ejoy2d_win_touch(x, y, TOUCH_BEGIN);
+        mouse_press = MOUSE_PRESS;
     }
     else if (action == GLFW_RELEASE) {
-        ejoy2d_win_touch(xpos,ypos,TOUCH_END);
-    }
-    else {
-        ejoy2d_win_touch(xpos,ypos,TOUCH_MOVE);
+        ejoy2d_win_touch(x,y,TOUCH_END);
+        mouse_press = MOUSE_RELEASE;
     }
 }
 
@@ -86,7 +94,7 @@ init_window()
     if (!glfwInit())
        exit(EXIT_FAILURE);
 
-    window = glfwCreateWindow(640, 480, "ejoy2d", NULL, NULL);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "ejoy2d", NULL, NULL);
     if (!window)
     {
        glfwTerminate();
@@ -98,6 +106,8 @@ init_window()
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 int
