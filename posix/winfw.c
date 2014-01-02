@@ -115,6 +115,7 @@ ejoy2d_win_update() {
 
 void
 ejoy2d_win_frame() {
+    //glClearColor(1.0,0.0,1.0,0.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	ejoy2d_game_drawframe(G->game);
 }

@@ -29,6 +29,7 @@ function game.drawframe()
 end
 
 function game.touch(what, x, y)
+    print(what, x, y)
 end
 
 ej.start(game)
