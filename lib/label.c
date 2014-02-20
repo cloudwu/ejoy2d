@@ -12,6 +12,8 @@
 
 #define TEX_HEIGHT 1024
 #define TEX_WIDTH 1024
+#define FONT_SIZE 31
+#define TEX_FMT GL_ALPHA
 
 static GLuint Tex;
 static struct dfont * Dfont = NULL;
@@ -28,10 +30,11 @@ label_load() {
 
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, (GLsizei)TEX_WIDTH, (GLsizei)TEX_HEIGHT, 0, GL_ALPHA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, TEX_FMT, (GLsizei)TEX_WIDTH, (GLsizei)TEX_HEIGHT, 0, TEX_FMT, GL_UNSIGNED_BYTE, NULL);
 }
 
 void
@@ -71,24 +74,110 @@ get_unicode(const char *str, int n) {
 	return unicode;
 }
 
+static inline int
+max(int a, int b, int c, int d) {
+	a = a>b ? a : b;
+	a = a>c ? a : c;
+	a = a>d ? a : d;
+	return a;
+}
+
+static void
+gen_outline(int w, int h, uint8_t *buffer, uint8_t *dest) {
+	int i,j;
+	for (i=0;i<h;i++) {
+		uint8_t * output = dest + i*w;
+		uint8_t * line = buffer + i*w;
+		uint8_t * prev;
+		uint8_t * next;
+		if (i==0) {
+			prev = line;
+		} else {
+			prev = line-w;
+		}
+		if (i==h-1) {
+			next = line;
+		} else {
+			next = line+w;
+		}
+		for (j=0;j<w;j++) {
+			int left, right;
+			if (j==0) {
+				left = 0;
+			} else {
+				left = 1;
+			}
+			if (j==w-1) {
+				right = 0;
+			} else {
+				right = 1;
+			}
+			int n1 = max(line[j-left],line[j+right],prev[j],next[j]);
+			int n2 = max(prev[j-left],prev[j+right],next[j-left],next[j+right]);
+			int edge = (n1*3 + n2) / 4;
+			if (line[j] == 0) {
+				output[j] = edge / 2;
+			} else {
+				output[j] = line[j]/2 + 128;
+			}
+		}
+		if (output[0] > 128) {
+			output[0]/=2;
+		}
+		if (output[w-1] > 128) {
+			output[w-1]/=2;
+		}
+	}
+}
+
+/*
+static void
+write_pgm(int unicode, int w, int h, const uint8_t * buffer) {
+	char tmp[128];
+	sprintf(tmp,"%d.pgm",unicode);
+	FILE *f = fopen(tmp, "wb");
+	fprintf(f, "P2\n%d %d\n255\n",w,h);
+	int i,j;
+	for (i=0;i<h;i++) {
+		for (j=0;j<w;j++) {
+			fprintf(f,"%3d,",buffer[0]);
+			++buffer;
+		}
+		fprintf(f,"\n");
+	}
+	fclose(f);
+}
+*/
+
 static const struct dfont_rect *
 gen_char(int unicode, const char * utf8, int size) {
+	// todo : use large size when size is large
 	struct font_context ctx;
-	font_create(size, &ctx);
+	font_create(FONT_SIZE, &ctx);
+	if (ctx.font == NULL) {
+		return NULL;
+	}
+
 	font_size(utf8, unicode, &ctx);
-	const struct dfont_rect * rect = dfont_insert(Dfont, unicode, size, ctx.w,ctx.h);
+	const struct dfont_rect * rect = dfont_insert(Dfont, unicode, FONT_SIZE, ctx.w+1, ctx.h+1);
 	if (rect == NULL) {
 		font_release(&ctx);
 		return NULL;
 	}
-	int buffer_sz = rect->w * rect->h;
+	ctx.w = rect->w ;
+	ctx.h = rect->h ;
+	int buffer_sz = ctx.w * ctx.h;
 	uint8_t buffer[buffer_sz];
-	memset(buffer,0,buffer_sz);
-	font_glyph(utf8, unicode, buffer, &ctx);
+	uint8_t tmp[buffer_sz];
+
+	memset(tmp,0,buffer_sz);
+	font_glyph(utf8, unicode, tmp, &ctx);
+	gen_outline(ctx.w, ctx.h, tmp, buffer);
+//	write_pgm(unicode, ctx.w, ctx.h, buffer);
 	font_release(&ctx);
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_ALPHA, GL_UNSIGNED_BYTE, buffer);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, TEX_FMT, GL_UNSIGNED_BYTE, buffer);
 
 	return rect;
 }
@@ -105,27 +194,39 @@ set_point(float *v, int *m, int xx, int yy,int tx, int ty) {
 }
 
 static void
-draw_rect(const struct dfont_rect *rect, struct matrix *mat, uint32_t color) {
+draw_rect(const struct dfont_rect *rect, int size, struct matrix *mat, uint32_t color) {
 	float vb[16];
 
-	int w = rect->w-1;
-	int h = rect->h-1;
+	int w = (rect->w -1) * size / FONT_SIZE ;
+	int h = (rect->h -1) * size / FONT_SIZE ;
 
 	set_point(vb+0, mat->m, 0,0, rect->x, rect->y);
-	set_point(vb+4, mat->m, w*SCREEN_SCALE,0, rect->x+w, rect->y);
-	set_point(vb+8, mat->m, w*SCREEN_SCALE,h*SCREEN_SCALE, rect->x+w, rect->y+h);
-	set_point(vb+12, mat->m, 0,h*SCREEN_SCALE, rect->x, rect->y+h);
+	set_point(vb+4, mat->m, w*SCREEN_SCALE,0, rect->x+rect->w-1, rect->y);
+	set_point(vb+8, mat->m, w*SCREEN_SCALE,h*SCREEN_SCALE, rect->x+rect->w-1, rect->y+rect->h-1);
+	set_point(vb+12, mat->m, 0,h*SCREEN_SCALE, rect->x, rect->y+rect->h-1);
 	shader_draw(vb, color);
 }
 
 static int
 draw_size(int unicode, const char *utf8, int size) {
-	const struct dfont_rect * rect = dfont_lookup(Dfont,unicode, size);
+	const struct dfont_rect * rect = dfont_lookup(Dfont,unicode,FONT_SIZE);
 	if (rect == NULL) {
 		rect = gen_char(unicode,utf8,size);
 	}
 	if (rect) {
-		return rect->w - 1;
+		return (rect->w -1) * size / FONT_SIZE;
+	}
+	return 0;
+}
+
+static int
+draw_height(int unicode, const char *utf8, int size) {
+	const struct dfont_rect * rect = dfont_lookup(Dfont,unicode,FONT_SIZE);
+	if (rect == NULL) {
+		rect = gen_char(unicode,utf8,size);
+	}
+	if (rect) {
+		return rect->h * size / FONT_SIZE;
 	}
 	return 0;
 }
@@ -149,8 +250,9 @@ color_mul(uint32_t c1, uint32_t c2) {
 }
 
 static int
-draw_utf8(int unicode, int cx, int cy, int size, const struct srt *srt, uint32_t color, const struct sprite_trans *arg) {
-	const struct dfont_rect * rect = dfont_lookup(Dfont,unicode, size);
+draw_utf8(int unicode, int cx, int cy, int size, const struct srt *srt,
+	uint32_t color, const struct sprite_trans *arg) {
+	const struct dfont_rect * rect = dfont_lookup(Dfont, unicode, FONT_SIZE);
 	if (rect == NULL) {
 		return 0;
 	}
@@ -165,15 +267,59 @@ draw_utf8(int unicode, int cx, int cy, int size, const struct srt *srt, uint32_t
 		m=&mat1;
 	}
 	matrix_srt(m, srt);
-	draw_rect(rect,m,color);
+	draw_rect(rect,size,m,color);
 
-	return rect->w - 1;
+	return (rect->w-1) * size / FONT_SIZE ;
+}
+
+static void
+draw_line(const char *str, struct pack_label * l, struct srt *srt, const struct sprite_trans *arg,
+          uint32_t color, int cy, int w, int start, int end) {
+    int cx, j;
+
+    switch (l->align) {
+        case LABEL_ALIGN_LEFT:
+            cx = 0;
+            break;
+        case LABEL_ALIGN_RIGHT:
+            cx = l->width - w;
+            break;
+        case LABEL_ALIGN_CENTER:
+            cx = (l->width - w)/2;
+            break;
+    }
+    
+    for (j=start; j<end;) {
+        int unicode;
+        uint8_t c = (uint8_t)str[j];
+        if ((c&0x80) == 0) {
+            unicode = get_unicode(str+j,1);
+            j+=1;
+        } else if ((c&0xe0) == 0xc0) {
+            unicode = get_unicode(str+j,2);
+            j+=2;
+        } else if ((c&0xf0) == 0xe0) {
+            unicode = get_unicode(str+j,3);
+            j+=3;
+        } else if ((c&0xf8) == 0xf0) {
+            unicode = get_unicode(str+j,4);
+            j+=4;
+        } else if ((c&0xfc) == 0xf8) {
+            unicode = get_unicode(str+j,5);
+            j+=5;
+        } else {
+            unicode = get_unicode(str+j,6);
+            j+=6;
+        }
+        
+        if(unicode != '\n')
+            cx+=draw_utf8(unicode, cx, cy, l->size, srt, color, arg);
+    }
 }
 
 void
 label_draw(const char *str, struct pack_label * l, struct srt *srt, const struct sprite_trans *arg) {
 	shader_texture(Tex);
-	shader_program(PROGRAM_TEXT, arg->additive);
 	uint32_t color;
 	if (arg->color == 0xffffffff) {
 		color = l->color;
@@ -186,8 +332,8 @@ label_draw(const char *str, struct pack_label * l, struct srt *srt, const struct
 
 	char utf8[7];
 	int i;
-	int w = 0;
-	for (i=0;str[i];) {
+    int ch = 0, w = 0, cy = 0, pre = 0;
+	for (i=0; str[i];) {
 		int unicode;
 		uint8_t c = (uint8_t)str[i];
 		if ((c&0x80) == 0) {
@@ -209,45 +355,19 @@ label_draw(const char *str, struct pack_label * l, struct srt *srt, const struct
 			unicode = copystr(utf8,str+i,6);
 			i+=6;
 		}
-		w+=draw_size(unicode, utf8, l->size);
+		w += draw_size(unicode, utf8, l->size);
+        if (ch == 0) {
+            ch = draw_height(unicode, utf8, l->size);
+        }
+        
+        if(w > l->width || unicode == '\n') {
+            draw_line(str, l, srt, arg, color, cy, w, pre, i);
+            cy += ch;
+            pre = i;
+            w = 0; ch = 0;
+        }
 	}
-
-	int cx=0,cy=0;
-	switch (l->align) {
-	case LABEL_ALIGN_LEFT:
-		cx = 0;
-		break;
-	case LABEL_ALIGN_RIGHT:
-		cx = l->width - w;
-		break;
-	case LABEL_ALIGN_CENTER:
-		cx = (l->width - w)/2;
-		break;
-	}
-
-	for (i=0;str[i];) {
-		int unicode;
-		uint8_t c = (uint8_t)str[i];
-		if ((c&0x80) == 0) {
-			unicode = get_unicode(str+i,1);
-			i+=1;
-		} else if ((c&0xe0) == 0xc0) {
-			unicode = get_unicode(str+i,2);
-			i+=2;
-		} else if ((c&0xf0) == 0xe0) {
-			unicode = get_unicode(str+i,3);
-			i+=3;
-		} else if ((c&0xf8) == 0xf0) {
-			unicode = get_unicode(str+i,4);
-			i+=4;
-		} else if ((c&0xfc) == 0xf8) {
-			unicode = get_unicode(str+i,5);
-			i+=5;
-		} else {
-			unicode = get_unicode(str+i,6);
-			i+=6;
-		}
-		// todo: multiline
-		cx+=draw_utf8(unicode, cx,cy, l->size, srt, color, arg);
-	}
+    
+    draw_line(str, l, srt, arg, color, cy, w, pre, i);
 }
+

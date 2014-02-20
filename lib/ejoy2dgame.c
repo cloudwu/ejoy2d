@@ -15,17 +15,20 @@
 #include "label.h"
 #include "particle.h"
 
-#define LOGIC_FRAME 30
+//#define LOGIC_FRAME 30
 
 #define EJOY_INIT "EJOY2D_INIT"
 #define EJOY_UPDATE "EJOY2D_UPDATE"
 #define EJOY_DRAWFRAME "EJOY2D_DRAWFRAME"
 #define EJOY_TOUCH "EJOY2D_TOUCH"
+#define EJOY_GESTURE "EJOY2D_GESTURE"
 
 #define TRACEBACK_FUNCTION 1
 #define UPDATE_FUNCTION 2
 #define DRAWFRAME_FUNCTION 3
 #define TOP_FUNCTION 3
+
+static int LOGIC_FRAME = 30;
 
 struct game {
 	lua_State *L;
@@ -47,6 +50,7 @@ linject(lua_State *L) {
 		EJOY_UPDATE,
 		EJOY_DRAWFRAME,
 		EJOY_TOUCH,
+        EJOY_GESTURE,
 	};
 	int i;
 	for (i=0;i<sizeof(ejoy_callback)/sizeof(ejoy_callback[0]);i++) {
@@ -82,11 +86,18 @@ checkluaversion(lua_State *L) {
 	}
 }
 
+#define STR_VALUE(arg)	#arg
+#define _OS_STRING(name) STR_VALUE(name)
+#define OS_STRING _OS_STRING(EJOY2D_OS)
+
 struct game *
 ejoy2d_game() {
-	struct game *G = malloc(sizeof(*G));
+	struct game *G = (struct game *)malloc(sizeof(*G));
 	lua_State *L = luaL_newstate();
 	checkluaversion(L);
+	lua_pushliteral(L, OS_STRING);
+	lua_setglobal(L , "OS");
+
 	G->L = L;
 	G->real_time = 0;
 	G->logic_time = 0;
@@ -132,6 +143,12 @@ traceback (lua_State *L) {
 		lua_pushliteral(L, "(no error message)");
 	}
 	return 1;
+}
+
+void
+ejoy2d_game_logicframe(int frame)
+{
+	LOGIC_FRAME = frame;
 }
 
 void
@@ -199,14 +216,30 @@ ejoy2d_game_drawframe(struct game *G) {
 	label_flush();
 }
 
-void
+int
 ejoy2d_game_touch(struct game *G, int id, float x, float y, int status) {
+    int disable_gesture = 0;
 	lua_getfield(G->L, LUA_REGISTRYINDEX, EJOY_TOUCH);
 	lua_pushnumber(G->L, x);
 	lua_pushnumber(G->L, y);
 	lua_pushinteger(G->L, status+1);
 	lua_pushinteger(G->L, id);
-	call(G->L, 4, 0);
+	int err = call(G->L, 4, 1);
+    if (err == LUA_OK) {
+        disable_gesture = lua_toboolean(G->L, -1);
+    }
+    return disable_gesture;
 }
 
-
+void
+ejoy2d_game_gesture(struct game *G, int type,
+                    double x1, double y1,double x2,double y2, int s) {
+    lua_getfield(G->L, LUA_REGISTRYINDEX, EJOY_GESTURE);
+    lua_pushnumber(G->L, type);
+    lua_pushnumber(G->L, x1);
+    lua_pushnumber(G->L, y1);
+    lua_pushnumber(G->L, x2);
+    lua_pushnumber(G->L, y2);
+    lua_pushinteger(G->L, s);
+    call(G->L, 6, 0);
+}

@@ -4,8 +4,10 @@
 #include <stdint.h>
 #include <lua.h>
 
+#define PROGRAM_DEFAULT -1
 #define PROGRAM_PICTURE 0
 #define PROGRAM_TEXT 1
+#define PROGRAM_TEXT_EDGE 2
 
 void shader_init();
 void shader_load(int prog, const char *fs, const char *vs);

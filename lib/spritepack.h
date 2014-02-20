@@ -9,10 +9,19 @@
 #define TYPE_ANIMATION 2
 #define TYPE_POLYGON 3
 #define TYPE_LABEL 4
+#define TYPE_PANNEL 5
+#define TYPE_ANCHOR 6
 
+#define ANCHOR_ID 0xffff
 #define SCREEN_SCALE 16
 
 struct matrix;
+
+struct pack_pannel {
+	int width;
+	int height;
+	int scissor;
+};
 
 struct pack_label {
 	uint32_t color;
@@ -20,6 +29,8 @@ struct pack_label {
 	int height;
 	int align;
 	int size;
+    int edge;
+    int max_width;
 };
 
 struct pack_quad {
@@ -49,11 +60,13 @@ struct sprite_trans {
 	struct matrix * mat;
 	uint32_t color;
 	uint32_t additive;
+	int program;
 };
 
 struct pack_part {
 	int component_id;
 	struct sprite_trans t;
+	int touchable;
 };
 
 struct pack_frame {

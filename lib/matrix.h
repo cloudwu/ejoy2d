@@ -29,7 +29,7 @@ matrix_identity(struct matrix *mm) {
 	mat[5] = 0;
 }
 
-void matrix_inverse(const struct matrix *mm, struct matrix *mo);
+int matrix_inverse(const struct matrix *mm, struct matrix *mo);
 
 struct srt {
 	int offx;
@@ -42,5 +42,6 @@ struct srt {
 void matrix_srt(struct matrix *mm, const struct srt *srt);
 void matrix_rot(struct matrix *m, int rot);
 void matrix_scale(struct matrix *m, int sx, int sy);
+void matrix_sr(struct matrix *mat, int sx, int sy, int d);
 
 #endif

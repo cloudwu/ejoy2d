@@ -14,6 +14,7 @@ local TYPE_PICTURE = assert(pack.TYPE_PICTURE)
 local TYPE_ANIMATION = assert(pack.TYPE_ANIMATION)
 local TYPE_POLYGON = assert(pack.TYPE_POLYGON)
 local TYPE_LABEL = assert(pack.TYPE_LABEL)
+local TYPE_PANNEL = assert(pack.TYPE_PANNEL)
 
 local function pack_picture(src, ret)
 	table.insert(ret , pack.byte(TYPE_PICTURE))
@@ -96,6 +97,9 @@ local function pack_part(data, ret)
 		if data.add and data.add ~= 0 then
 			tag = tag .. "a"
 		end
+		if data.touch and data.touch == 1 then
+			tag = tag .. "t"
+		end
 		table.insert(ret, pack.frametag(tag))
 
 		table.insert(ret, pack.word(data.index))
@@ -110,7 +114,9 @@ local function pack_part(data, ret)
 		if data.add and data.add ~= 0 then
 			table.insert(ret, pack.color(data.add))
 		end
-
+		if data.touch and data.touch == 1 then
+			table.insert(ret, pack.word(1))
+		end
 		return pack.part_size(mat)
 	end
 end
@@ -119,7 +125,8 @@ local function pack_frame(data, ret)
 	local size = 0
 	table.insert(ret, pack.byte(#data))
 	for _,v in ipairs(data) do
-		size = size + pack_part(v, ret)
+		local psize = pack_part(v, ret)
+		size = size + psize
 	end
 	return size
 end
@@ -131,7 +138,17 @@ local function pack_label(data, ret)
 	table.insert(ret, pack.word(data.size))
 	table.insert(ret, pack.word(data.width))
 	table.insert(ret, pack.word(data.height))
+    table.insert(ret, pack.byte(data.noedge and 0 or 1))
+    table.insert(ret, pack.word(data.maxwidth or 0))
 	return pack.label_size()
+end
+
+local function pack_pannel(data, ret)
+	table.insert(ret, pack.byte(TYPE_PANNEL))
+	table.insert(ret, pack.int32(data.width))
+	table.insert(ret, pack.int32(data.height))
+	table.insert(ret, pack.byte(data.scissor and 1 or 0))
+	return pack.pannel_size()
 end
 
 local function pack_animation(data, ret)
@@ -141,8 +158,12 @@ local function pack_animation(data, ret)
 	local component = assert(data.component)
 	table.insert(ret , pack.word(#component))
 	for _, v in ipairs(component) do
-		if v.id > max_id then
+		if v.id and v.id > max_id then
 			max_id = v.id
+		end
+		if v.id == nil then
+			assert(v.name, "Anchor need a name")
+			v.id = 0xffff	-- Anchor use id 0xffff
 		end
 		table.insert(ret, pack.word(v.id))
 		table.insert(ret, pack.string(v.name))
@@ -173,39 +194,44 @@ function spritepack.pack( data )
 	local ani_maxid = 0
 
 	for _,v in ipairs(data) do
-		local id = assert(tonumber(v.id))
-		if id > ret.maxid then
-			ret.maxid = id
-		end
-		local exportname = v.export
-		if exportname then
-			assert(ret.export[exportname] == nil, "Duplicate export name")
-			ret.export[exportname] = id
-		end
-		table.insert(ret.data, pack.word(id))
-		if v.type == "picture" then
-			local sz, texid = pack_picture(v, ret.data)
-			ret.size = ret.size + sz
-			if texid > ret.texture then
-				ret.texture = texid
+		if v.type ~= "particle" then
+			local id = assert(tonumber(v.id))
+			if id > ret.maxid then
+				ret.maxid = id
 			end
-		elseif v.type == "animation" then
-			local sz , maxid = pack_animation(v, ret.data)
-			ret.size = ret.size + sz
-			if maxid > ani_maxid then
-				ani_maxid = maxid
+			local exportname = v.export
+			if exportname then
+				assert(ret.export[exportname] == nil, "Duplicate export name")
+				ret.export[exportname] = id
 			end
-		elseif v.type == "polygon" then
-			local sz, texid = pack_polygon(v, ret.data)
-			ret.size = ret.size + sz
-			if texid > ret.texture then
-				ret.texture = texid
+			table.insert(ret.data, pack.word(id))
+			if v.type == "picture" then
+				local sz, texid = pack_picture(v, ret.data)
+				ret.size = ret.size + sz
+				if texid > ret.texture then
+					ret.texture = texid
+				end
+			elseif v.type == "animation" then
+				local sz , maxid = pack_animation(v, ret.data)
+				ret.size = ret.size + sz
+				if maxid > ani_maxid then
+					ani_maxid = maxid
+				end
+			elseif v.type == "polygon" then
+				local sz, texid = pack_polygon(v, ret.data)
+				ret.size = ret.size + sz
+				if texid > ret.texture then
+					ret.texture = texid
+				end
+			elseif v.type == "label" then
+				local sz = pack_label(v, ret.data)
+				ret.size = ret.size + sz
+			elseif v.type == "pannel" then
+				local sz = pack_pannel(v, ret.data)
+				ret.size = ret.size + sz
+			else
+				error ("Unknown type " .. tostring(v.type))
 			end
-		elseif v.type == "label" then
-			local sz = pack_label(v, ret.data)
-			ret.size = ret.size + sz
-		else
-			error ("Unknown type " .. tostring(v.type))
 		end
 	end
 
@@ -219,6 +245,41 @@ function spritepack.pack( data )
 	return ret
 end
 
+function spritepack.export(meta)
+	local result = { true }
+	table.insert(result, pack.word(meta.maxid))
+	table.insert(result, pack.word(meta.texture))
+	table.insert(result, pack.int32(meta.size))
+	table.insert(result, pack.int32(#meta.data))
+	local s = 0
+	for k,v in pairs(meta.export) do
+		table.insert(result, pack.word(v))
+		table.insert(result, pack.string(k))
+		s = s + 1
+	end
+	result[1] = pack.word(s)
+	table.insert(result, meta.data)
+	return table.concat(result)
+end
+
+function spritepack.import(data)
+	local meta = { export = {} }
+	local export_n, off = pack.import_value(data, 1, 'w')
+	meta.maxid , off = pack.import_value(data, off, 'w')
+	meta.texture , off = pack.import_value(data, off, 'w')
+	meta.size , off = pack.import_value(data, off, 'i')
+	meta.data_sz , off = pack.import_value(data, off, 'i')
+	for i=1, export_n do
+		local id, name
+		id, off = pack.import_value(data, off, 'w')
+		name, off = pack.import_value(data, off, 's')
+		meta.export[name] = id
+	end
+	meta.data = pack.import_value(data, off, 'p')
+
+	return meta
+end
+
 function spritepack.init( name, texture, meta )
 	assert(pack_pool[name] == nil , string.format("sprite package [%s] is exist", name))
 	if type(texture) == "number" then
@@ -227,9 +288,10 @@ function spritepack.init( name, texture, meta )
 		assert(meta.texture == #texture)
 	end
 	pack_pool[name] = {
-		cobj = pack.import(texture,meta.maxid,meta.size,meta.data),
+		cobj = pack.import(texture,meta.maxid,meta.size,meta.data, meta.data_sz),
 		export = meta.export,
 	}
+	meta.data = nil
 
 	return pack_pool[name]
 end

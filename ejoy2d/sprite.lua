@@ -1,13 +1,26 @@
 local debug = debug
 local c = require "ejoy2d.sprite.c"
 local pack = require "ejoy2d.spritepack"
+local shader = require "ejoy2d.shader"
 
 local method = c.method
 local method_fetch = method.fetch
+local method_test = method.test
 local fetch
+local test
 
 local get = c.get
 local set = c.set
+
+local set_program = set.program
+
+function set:program(prog)
+	if prog == nil then
+		set_program(self)
+	else
+		set_program(self, shader.id(prog))
+	end
+end
 
 local sprite_meta = {}
 
@@ -20,10 +33,12 @@ function sprite_meta.__index(spr, key)
 		return getter(spr)
 	end
 	local child = fetch(spr, key)
+
 	if child then
 		return child
 	else
-		error("Unsupport get " ..  key)
+		print("Unsupport get " ..  key)
+		return nil
 	end
 end
 
@@ -45,7 +60,16 @@ function fetch(spr, child)
 	end
 end
 
+-- local function
+function test(...)
+	local cobj = method_test(...)
+	if cobj then
+		return debug.setmetatable(cobj, sprite_meta)
+	end
+end
+
 method.fetch = fetch
+method.test = test
 
 local sprite = {}
 
@@ -63,10 +87,11 @@ function sprite.label(tbl)
 	if l then
 		l = debug.setmetatable(l, sprite_meta)
 		if tbl.text then
-			l.name = tbl.text
+			l.text = tbl.text
 		end
 		return l
 	end
 end
+
 
 return sprite

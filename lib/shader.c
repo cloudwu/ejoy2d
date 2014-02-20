@@ -8,7 +8,8 @@
 #include <assert.h>
 
 #define MAX_COMMBINE 64
-#define MAX_PROGRAM 2
+#define MAX_PROGRAM 6
+
 #define ATTRIB_VERTEX 0
 #define ATTRIB_TEXTCOORD 1
 #define ATTRIB_COLOR 2
@@ -26,7 +27,7 @@ struct vertex {
 	float vy;
 	float tx;
 	float ty;
-	uint32_t color;
+	uint8_t rgba[4];
 };
 
 struct quad {
@@ -49,7 +50,7 @@ static struct render_state *RS = NULL;
 void
 shader_init() {
 	assert(RS == NULL);
-	struct render_state * rs = malloc(sizeof(*rs));
+	struct render_state * rs = (struct render_state *) malloc(sizeof(*rs));
 	memset(rs, 0 , sizeof(*rs));
 	rs->current_program = -1;
 	rs->blendchange = 0;
@@ -148,11 +149,12 @@ program_init(struct program * p, const char *FS, const char *VS) {
 		glAttachShader(p->prog, vs);
 	}
 
-	link(p);
-	
 	glBindAttribLocation(p->prog, ATTRIB_VERTEX, "position");
 	glBindAttribLocation(p->prog, ATTRIB_TEXTCOORD, "texcoord");
 	glBindAttribLocation(p->prog, ATTRIB_COLOR, "color");
+
+	link(p);
+
 	p->additive = glGetUniformLocation(p->prog, "additive");
 	p->arg = 0;
 	set_color(p->additive, 0);
@@ -204,7 +206,7 @@ rs_commit() {
 	glEnableVertexAttribArray(ATTRIB_TEXTCOORD);
 	glVertexAttribPointer(ATTRIB_TEXTCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(8));
 	glEnableVertexAttribArray(ATTRIB_COLOR);
-	glVertexAttribPointer(ATTRIB_COLOR, GL_BGRA, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct vertex), BUFFER_OFFSET(16));
+	glVertexAttribPointer(ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct vertex), BUFFER_OFFSET(16));
 	glDrawElements(GL_TRIANGLES, 6 * RS->object, GL_UNSIGNED_BYTE, 0);
 	RS->object = 0;
 }
@@ -242,7 +244,10 @@ shader_draw(const float vb[16], uint32_t color) {
 		q->p[i].vy = vb[i*4+1];
 		q->p[i].tx = vb[i*4+2];
 		q->p[i].ty = vb[i*4+3];
-		q->p[i].color = color;
+		q->p[i].rgba[0] = (color >> 16) & 0xff;
+		q->p[i].rgba[1] = (color >> 8) & 0xff;
+		q->p[i].rgba[2] = (color) & 0xff;
+		q->p[i].rgba[3] = (color >> 24) & 0xff;
 	}
 	if (++RS->object >= MAX_COMMBINE) {
 		rs_commit();
@@ -259,7 +264,10 @@ shader_drawpolygon(int n, const float *vb, uint32_t color) {
 		p[i].vy = vb[i*4+1];
 		p[i].tx = vb[i*4+2];
 		p[i].ty = vb[i*4+3];
-		p[i].color = color;
+		p[i].rgba[0] = (color >> 16) & 0xff;
+		p[i].rgba[1] = (color >> 8) & 0xff;
+		p[i].rgba[2] = (color) & 0xff;
+		p[i].rgba[3] = (color >> 24) & 0xff;
 	}
 	
 	glBindBuffer(GL_ARRAY_BUFFER, RS->vertex_buffer);
@@ -270,7 +278,7 @@ shader_drawpolygon(int n, const float *vb, uint32_t color) {
 	glEnableVertexAttribArray(ATTRIB_TEXTCOORD);
 	glVertexAttribPointer(ATTRIB_TEXTCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(8));
 	glEnableVertexAttribArray(ATTRIB_COLOR);
-	glVertexAttribPointer(ATTRIB_COLOR, GL_BGRA, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct vertex), BUFFER_OFFSET(16));
+	glVertexAttribPointer(ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct vertex), BUFFER_OFFSET(16));
 	glDrawArrays(GL_TRIANGLE_FAN, 0, n);
 }
 
@@ -283,6 +291,7 @@ void
 shader_defaultblend() {
 	if (RS->blendchange) {
 		rs_commit();
+		RS->blendchange = 0;
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	}
 }

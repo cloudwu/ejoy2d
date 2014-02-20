@@ -1,45 +1,52 @@
 #include "matrix.h"
 #include <stdint.h>
 
-static inline void
+static inline int
 _inverse_scale(const int *m , int *o) {
+	if (m[0] == 0 || m[3] == 0)
+		return 1;
 	o[0] = (1024 * 1024) / m[0];
 	o[1] = 0;
 	o[2] = 0;
 	o[3] = (1024 * 1024) / m[3];
 	o[4] = - (m[4] * o[0]) / 1024;
 	o[5] = - (m[5] * o[3]) / 1024;
+	return 0;
 }
 
-static inline void
+static inline int
 _inverse_rot(const int *m, int *o) {
+	if (m[1] == 0 || m[2] == 0)
+		return 1;
 	o[0] = 0;
 	o[1] = (1024 * 1024) / m[2];
 	o[2] = (1024 * 1024) / m[1];
 	o[3] = 0;
 	o[4] = - (m[5] * o[2]) / 1024;
 	o[5] = - (m[4] * o[1]) / 1024;
+	return 0;
 }
 
-void
+int
 matrix_inverse(const struct matrix *mm, struct matrix *mo) {
 	const int *m = mm->m;
 	int *o = mo->m;
 	if (m[1] == 0 && m[2] == 0) {
-		_inverse_scale(m,o);
-		return;
+		return _inverse_scale(m,o);
 	}
 	if (m[0] == 0 && m[3] == 0) {
-		_inverse_rot(m,o);
-		return;
+		return _inverse_rot(m,o);
 	}
 	int t = m[0] * m[3] - m[1] * m[2] ;
-	o[0] = (int64_t)m[3] * (1024 * 1024) / t;
-	o[1] = - (int64_t)m[1] * (1024 * 1024) / t;
-	o[2] = - (int64_t)m[2] * (1024 * 1024) / t;
-	o[3] = (int64_t)m[0] * (1024 * 1024) / t;
+	if (t == 0)
+		return 1;
+	o[0] = (int32_t)((int64_t)m[3] * (1024 * 1024) / t);
+	o[1] = (int32_t)(- (int64_t)m[1] * (1024 * 1024) / t);
+	o[2] = (int32_t)(- (int64_t)m[2] * (1024 * 1024) / t);
+	o[3] = (int32_t)((int64_t)m[0] * (1024 * 1024) / t);
 	o[4] = - (m[4] * o[0] + m[5] * o[2]) / 1024;
 	o[5] = - (m[4] * o[1] + m[5] * o[3]) / 1024;
+	return 0;
 }
 
 // SRT to matrix
@@ -127,7 +134,7 @@ scale_mat(int *m, int sx, int sy) {
 	}
 }
 
-void 
+void
 matrix_srt(struct matrix *mm, const struct srt *srt) {
 	scale_mat(mm->m, srt->scalex, srt->scaley);
 	rot_mat(mm->m, srt->rot);
@@ -135,9 +142,26 @@ matrix_srt(struct matrix *mm, const struct srt *srt) {
 	mm->m[5] += srt->offy;
 }
 
-void 
+void
 matrix_rot(struct matrix *m, int rot) {
 	rot_mat(m->m, rot);
+}
+
+void
+matrix_sr(struct matrix *mat, int sx, int sy, int d) {
+	int *m = mat->m;
+	int cosd = icosd(d);
+	int sind = isind(d);
+
+	int m0_cosd = sx * cosd;
+	int m0_sind = sx * sind;
+	int m3_cosd = sy * cosd;
+	int m3_sind = sy * sind;
+
+	m[0] = m0_cosd /1024;
+	m[1] = m0_sind /1024;
+	m[2] = -m3_sind /1024;
+	m[3] = m3_cosd /1024;
 }
 
 void

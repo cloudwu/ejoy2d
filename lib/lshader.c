@@ -7,7 +7,7 @@
 
 static int
 lload(lua_State *L) {
-	int prog = luaL_checkinteger(L,1);
+	int prog = (int)luaL_checkinteger(L,1);
 	const char *fs = luaL_checkstring(L, 2);
 	const char *vs = luaL_checkstring(L, 3);
 	shader_load(prog, fs, vs);
@@ -28,7 +28,7 @@ lunload(lua_State *L) {
  */
 static int
 ldraw(lua_State *L) {
-	int tex = luaL_checkinteger(L,1);
+	int tex = (int)luaL_checkinteger(L,1);
 	int texid = texture_glid(tex);
 	if (texid == 0) {
 		lua_pushboolean(L,0);
@@ -38,9 +38,9 @@ ldraw(lua_State *L) {
 	uint32_t color = 0xffffffff;
 
 	if (!lua_isnoneornil(L,3)) {
-		color = lua_tounsigned(L,3);
+		color = (uint32_t)lua_tounsigned(L,3);
 	}
-	uint32_t additive = luaL_optunsigned(L,4,0);
+	uint32_t additive = (uint32_t)luaL_optunsigned(L,4,0);
 	shader_program(PROGRAM_PICTURE,additive);
 	shader_texture(texid);
 	int n = lua_rawlen(L, 2);
@@ -80,11 +80,17 @@ lblend(lua_State *L) {
 	if (lua_isnoneornil(L,1)) {
 		shader_defaultblend();
 	} else {
-		int m1 = luaL_checkinteger(L,1);
-		int m2 = luaL_checkinteger(L,2);
+		int m1 = (int)luaL_checkinteger(L,1);
+		int m2 = (int)luaL_checkinteger(L,2);
 		shader_blend(m1,m2);
 	}
 	return 0;
+}
+
+static int
+lversion(lua_State *L) {
+	lua_pushinteger(L, OPENGLES);
+	return 1;
 }
 
 int 
@@ -94,6 +100,7 @@ ejoy2d_shader(lua_State *L) {
 		{"unload", lunload},
 		{"draw", ldraw},
 		{"blend", lblend},
+		{"version", lversion},
 		{NULL,NULL},
 	};
 	luaL_newlib(L,l);

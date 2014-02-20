@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <string.h>
 
 void
 font_create(int font_size, struct font_context *ctx) {
@@ -10,7 +11,7 @@ font_create(int font_size, struct font_context *ctx) {
 	HFONT f = CreateFontW(
 		font_size,0,
 		0, 0, 
-		0,
+		FW_SEMIBOLD,
 		FALSE, FALSE, FALSE, 
 		DEFAULT_CHARSET, 
 		OUT_DEFAULT_PRECIS, 
@@ -57,6 +58,7 @@ font_size(const char *str, int unicode, struct font_context *ctx) {
 void 
 font_glyph(const char * str, int unicode, void * buffer, struct font_context *ctx) {
 	GLYPHMETRICS gm;
+	memset(&gm,0,sizeof(gm));
 
 	uint8_t tmp[ctx->w * ctx->h];
 	memset(tmp,0, ctx->w * ctx->h);
@@ -74,7 +76,7 @@ font_glyph(const char * str, int unicode, void * buffer, struct font_context *ct
 	int w = (gm.gmBlackBoxX + 3) & ~3;
 	int h = gm.gmBlackBoxY;
 
-	uint8_t * buf = buffer;
+	uint8_t * buf = (uint8_t *)buffer;
 	int offx = gm.gmptGlyphOrigin.x;
 	int offy = ctx->ascent - gm.gmptGlyphOrigin.y;
 	assert(offx >= 0);
@@ -87,7 +89,7 @@ font_glyph(const char * str, int unicode, void * buffer, struct font_context *ct
 	for (i=0;i<h;i++) {
 		for (j=0;j<gm.gmBlackBoxX;j++) {
 			int src = tmp[i*w+j];
-			buf[(i + offy)*ctx->w + j + offx] = src * 255 / 65;
+			buf[(i + offy)*ctx->w + j + offx] = src * 255 / 64;
 		}
 	}
 }
