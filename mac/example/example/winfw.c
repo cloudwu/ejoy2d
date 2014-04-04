@@ -4,9 +4,8 @@
 #include "screen.h"
 #include "winfw.h"
 
-#include <windows.h>
 #include <lauxlib.h>
-
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -15,14 +14,16 @@ struct WINDOWGAME {
 	int intouch;
 };
 
+static const int BUFSIZE = 2048;
+
 static struct WINDOWGAME *G = NULL;
 
 static const char * startscript =
-"local path, script = ...\n"
+"local path,script = ...\n"
 "require(\"ejoy2d.framework\").WorkDir = ''\n"
 "assert(script, 'I need a script name')\n"
-"path = string.match(path,[[(.*)\\[^\\]*$]])\n"
-"package.path = path .. [[\\?.lua;]] .. path .. [[\\?\\init.lua;.\\?.lua;.\\?\\init.lua]]\n"
+"path = string.match(path,[[(.*)/[^/]*$]])\n"
+"package.path = path .. [[/?.lua;]] .. path .. [[/?/init.lua]]\n"
 "local f = assert(loadfile(script))\n"
 "f(script)\n"
 ;
@@ -47,6 +48,26 @@ traceback(lua_State *L) {
 	return 1;
 }
 
+#ifdef __APPLE__
+static const char*
+_read_exepath(char * buf, int bufsz) {
+    return getenv("_");
+}
+#define read_exepath(buf,bufsz) _read_exepath(buf,bufsz)
+
+#else
+static const char*
+read_exepath(char * buf, int bufsz) {
+    int  count;
+    count = readlink("/proc/self/exe", buf, bufsz);
+
+    if (count < 0)
+        return NULL;
+    return buf;
+}
+#endif
+
+
 void
 ejoy2d_win_init(int argc, char *argv[]) {
 	G = create_game();
@@ -58,19 +79,11 @@ ejoy2d_win_init(int argc, char *argv[]) {
 		const char *msg = lua_tostring(L,-1);
 		fault("%s", msg);
 	}
-
-	char modname[1024];
-
-	int sz = GetModuleFileNameA(0,  modname, 1024);
-
-	lua_pushlstring(L, modname, sz);
-
-	int i;
-	for (i=1;i<argc;i++) {
-		lua_pushstring(L, argv[i]);
-	}
-
-	err = lua_pcall(L, argc, 0, tb);
+  
+  lua_pushstring(L, "./");
+  lua_pushstring(L, "examples/ex03.lua");
+  
+	err = lua_pcall(L, 2, 0, tb);
 	if (err) {
 		const char *msg = lua_tostring(L,-1);
 		fault("%s", msg);

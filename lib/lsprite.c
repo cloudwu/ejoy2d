@@ -324,6 +324,13 @@ lgetname(lua_State *L) {
 }
 
 static int
+lgettype(lua_State *L) {
+	struct sprite *s = self(L);
+	lua_pushinteger(L, s->type);
+	return 1;
+}
+
+static int
 lgetparentname(lua_State *L) {
 	struct sprite *s = self(L);
 	if (s->parent == NULL)
@@ -410,6 +417,7 @@ lgetter(lua_State *L) {
 		{"frame_count", lgettotalframe },
 		{"visible", lgetvisible },
 		{"name", lgetname },
+		{"type", lgettype },
 		{"text", lgettext},
 		{"color", lgetcolor },
 		{"additive", lgetadditive },
@@ -786,8 +794,9 @@ static int
 lrecursion_frame(lua_State *L) {
 	struct sprite * s = self(L);
 	int frame = (int)luaL_checkinteger(L,2);
-	sprite_setframe(s, frame, true);
-	return 0;
+	int f = sprite_setframe(s, frame, true);
+	lua_pushinteger(L, f);
+	return 1;
 }
 
 static void
