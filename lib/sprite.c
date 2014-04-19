@@ -248,8 +248,8 @@ color_mul(uint32_t c1, uint32_t c2) {
 	int b1 = (c1 >> 8) & 0xff;
 	int a1 = (c1) & 0xff;
 	int r2 = (c2 >> 24) & 0xff;
-	int g2 = (c2 >> 24) & 0xff;
-	int b2 = (c2 >> 24) & 0xff;
+	int g2 = (c2 >> 16) & 0xff;
+	int b2 = (c2 >> 8) & 0xff;
 	int a2 = c2 & 0xff;
 
 	return (r1 * r2 /255) << 24 |
@@ -388,6 +388,7 @@ draw_child(struct sprite *s, struct srt *srt, struct sprite_trans * ts) {
 		return 0;
 	case TYPE_LABEL:
 		if (s->data.text) {
+			t->program = PROGRAM_DEFAULT;	// label never set user defined program
 			switch_program(t, s->s.label->edge ? PROGRAM_TEXT_EDGE : PROGRAM_TEXT);
 			label_draw(s->data.text, s->s.label,srt,t);
 		}
