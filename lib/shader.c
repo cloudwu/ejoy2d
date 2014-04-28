@@ -50,7 +50,8 @@ static struct render_state *RS = NULL;
 
 void
 shader_init() {
-	assert(RS == NULL);
+	if (RS) return;
+
 	struct render_state * rs = (struct render_state *) malloc(sizeof(*rs));
 	memset(rs, 0 , sizeof(*rs));
 	rs->current_program = -1;
@@ -79,6 +80,21 @@ shader_init() {
 	glEnable(GL_BLEND);
 
 	RS = rs;
+}
+void
+shader_reset()
+{
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	if (RS->current_program != -1)
+	{
+		glUseProgram(RS->program[RS->current_program].prog);
+	}
+
+	glBindTexture(GL_TEXTURE_2D, RS->tex);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RS->index_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, RS->vertex_buffer);
 }
 
 static GLuint

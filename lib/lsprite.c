@@ -79,6 +79,12 @@ lnewlabel(lua_State *L) {
 	return 1;
 }
 
+static int
+lgenoutline(lua_State *L) {
+  label_gen_outline(lua_toboolean(L, 1));
+  return 0;
+}
+
 static const char * srt_key[] = {
 	"x",
 	"y",
@@ -478,7 +484,7 @@ lmount(lua_State *L) {
 		lua_rawseti(L, -2, index+1);
 	} else {
 		if (child->parent) {
-			return luaL_error(L, "Can't mount sprite %p twice", child);
+			return luaL_error(L, "Can't mount sprite %p twice,pre parent:%p: %s", child,child->parent,child->name);
 		}
 		sprite_mount(s, index, child);
 		lua_pushvalue(L, 3);
@@ -872,6 +878,7 @@ ejoy2d_sprite(lua_State *L) {
 	luaL_Reg l[] ={
 		{ "new", lnew },
 		{ "label", lnewlabel },
+		{ "label_gen_outline", lgenoutline },
 		{ NULL, NULL },
 	};
 	luaL_newlib(L,l);

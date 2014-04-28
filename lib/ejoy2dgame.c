@@ -89,10 +89,14 @@ checkluaversion(lua_State *L) {
 			LUA_VERSION_NUM, *v);
 	}
 }
-
+#if __ANDROID__
+#define OS_STRING "ANDROID"
+#else
 #define STR_VALUE(arg)	#arg
 #define _OS_STRING(name) STR_VALUE(name)
 #define OS_STRING _OS_STRING(EJOY2D_OS)
+#endif
+
 
 struct game *
 ejoy2d_game() {
@@ -124,12 +128,22 @@ ejoy2d_game() {
 }
 
 void
+ejoy2d_close_lua(struct game *G) {
+	if (G) {
+		if (G->L) {
+			lua_close(G->L);
+			G->L = NULL;
+		}
+		free(G);
+	}
+}
+
+void
 ejoy2d_game_exit(struct game *G) {
 	label_unload();
 	texture_exit();
 	shader_unload();
-	lua_close(G->L);
-	free(G);
+	ejoy2d_close_lua(G);
 }
 
 lua_State *
@@ -225,6 +239,12 @@ call(lua_State *L, int n, int r) {
 	return err;
 }
 
+void
+ejoy2d_call_lua(lua_State *L, int n, int r) {
+  call(L, n, r);
+	lua_settop(L, TOP_FUNCTION);
+}
+
 static void
 logic_frame(lua_State *L) {
 	lua_pushvalue(L, UPDATE_FUNCTION);
@@ -263,10 +283,11 @@ ejoy2d_game_touch(struct game *G, int id, float x, float y, int status) {
 	lua_pushinteger(G->L, status+1);
 	lua_pushinteger(G->L, id);
 	int err = call(G->L, 4, 1);
-    if (err == LUA_OK) {
-        disable_gesture = lua_toboolean(G->L, -1);
-    }
-    return disable_gesture;
+  if (err == LUA_OK) {
+      disable_gesture = lua_toboolean(G->L, -1);
+  }
+  lua_settop(G->L, TOP_FUNCTION);
+  return disable_gesture;
 }
 
 void
@@ -280,6 +301,7 @@ ejoy2d_game_gesture(struct game *G, int type,
     lua_pushnumber(G->L, y2);
     lua_pushinteger(G->L, s);
     call(G->L, 6, 0);
+    lua_settop(G->L, TOP_FUNCTION);
 }
 
 void

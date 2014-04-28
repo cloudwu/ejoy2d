@@ -18,10 +18,12 @@
 
 static GLuint Tex;
 static struct dfont * Dfont = NULL;
+static int Outline = 1;
 
 void
 label_load() {
-	assert(Dfont == NULL);
+	if (Dfont) return;
+
 	Dfont = dfont_create(TEX_WIDTH, TEX_HEIGHT);
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 
@@ -50,6 +52,11 @@ label_flush() {
 	if (Dfont) {
 		dfont_flush(Dfont);
 	}
+}
+
+void
+label_gen_outline(int outline) {
+  Outline = outline;
 }
 
 static inline int
@@ -151,7 +158,7 @@ write_pgm(int unicode, int w, int h, const uint8_t * buffer) {
 */
 
 static const struct dfont_rect *
-gen_char(int unicode, const char * utf8, int size) {
+gen_char(int unicode, const char * utf8, int size, int outline) {
 	// todo : use large size when size is large
 	struct font_context ctx;
 	font_create(FONT_SIZE, &ctx);
@@ -170,11 +177,17 @@ gen_char(int unicode, const char * utf8, int size) {
 	int buffer_sz = ctx.w * ctx.h;
 
 	ARRAY(uint8_t, buffer, buffer_sz);
-	ARRAY(uint8_t, tmp, buffer_sz);
-
-	memset(tmp,0,buffer_sz);
-	font_glyph(utf8, unicode, tmp, &ctx);
-	gen_outline(ctx.w, ctx.h, tmp, buffer);
+  
+  if (outline) {
+    ARRAY(uint8_t, tmp, buffer_sz);
+    memset(tmp,0,buffer_sz);
+    font_glyph(utf8, unicode, tmp, &ctx);
+    gen_outline(ctx.w, ctx.h, tmp, buffer);
+  } else {
+    memset(buffer,0,buffer_sz);
+    font_glyph(utf8, unicode, buffer, &ctx);
+  }
+  
 //	write_pgm(unicode, ctx.w, ctx.h, buffer);
 	font_release(&ctx);
 
@@ -213,7 +226,7 @@ static int
 draw_size(int unicode, const char *utf8, int size) {
 	const struct dfont_rect * rect = dfont_lookup(Dfont,unicode,FONT_SIZE);
 	if (rect == NULL) {
-		rect = gen_char(unicode,utf8,size);
+		rect = gen_char(unicode,utf8,size,Outline);
 	}
 	if (rect) {
 		return (rect->w -1) * size / FONT_SIZE;
@@ -225,7 +238,7 @@ static int
 draw_height(int unicode, const char *utf8, int size) {
 	const struct dfont_rect * rect = dfont_lookup(Dfont,unicode,FONT_SIZE);
 	if (rect == NULL) {
-		rect = gen_char(unicode,utf8,size);
+		rect = gen_char(unicode,utf8,size,Outline);
 	}
 	if (rect) {
 		return rect->h * size / FONT_SIZE;
