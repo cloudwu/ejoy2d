@@ -2,12 +2,8 @@
 - **[package](#package)**
 - **[simplepackage](#simplepackage)**
 - **[texture](#texture)**
-    - [生成 ppm/pgm 文件](#texturefile)
 - **[matrix](#matrix)**
 - **[sprite](#sprite)**
-    - [sprite 方法](#spritemethod)
-    - [sprite 属性](#spriteatt)
-    - [sprite 资源结构](#spriteres)
 - **[particle](#particle)**
 
 ## <span id="package">package</span>
