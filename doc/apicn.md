@@ -110,7 +110,7 @@ filename 不能有后缀 ppm 或 pgm 。ppm.texture 会尝试打开 filename.ppm
 
 和 ppm.load 对应，可生成一个 ppm/pgm 文件。
 
-### <span id="texturefile">生成 ppm/pgm 文件</span>
+### 生成 ppm/pgm 文件
 
 如果你知道如何通过 lua 把常见格式如 png 加载到内存，那么你就可以用 ejoy2d 自带的 ppm.save 来生成 ppm/pgm 文件。
 
@@ -199,7 +199,7 @@ local obj = sprite.new("packname", "objectname")
 
 构造出来的 sprite 对象都可以对其调用一系列方法，而下列方法仅仅是被记入文档的一部分。未被文档化的方法可以在源代码中找到，但它们更可能在未来有变动，需要酌情使用。
 
-### <span id="spritemethod">sprite 方法</span>
+### sprite 方法
 
 ```Lua
 sprite:draw(srt)
@@ -254,7 +254,7 @@ sprite:mount(name, child)
 
 注：不能将同一个 sprite 对象 mount 到两个不同的 sprite 对象上。如果你需要这样做，请用同一份资源构造两个 sprite 对象。
 
-### <span id="spriteatt">sprite 属性</span>
+### sprite 属性
 * `sprite.frame` 可读写
 对象当前帧号
 * `sprite.matrix` 可读写
@@ -280,7 +280,7 @@ sprite:mount(name, child)
 * `sprite.world_matrix` 只读
 anchor 类型的对象的特有只读属性。它会返回上一次这个 anchor 对象最终渲染的世界矩阵。注：anchor 类型的对象默认 visible 为 false ，当不可显时，引擎不计算 world matrix 。
 
-### <span id="spriteres">sprite 资源结构</span>
+### sprite 资源结构
 sprite 用 lua 表的形式描述在资源文件中。资源文件通常于开发期构建。不同于运行期 API ，资源的数据定义灵活度要更为灵活。开发者可以按格式手写资源文件，更可以用额外的工具生成它们。对于特殊的需求，还可以用另一段 lua 脚本生成需要的数据（比如用工具生成动画的关键帧，再用程序插值补上中间的运动帧）。
 
 资源的数据结构说明见：http://blog.codingnow.com/2013/12/ejoy2d.html
