@@ -4,8 +4,6 @@
 
 #include <jni.h>
 #include <EGL/egl.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
 #include <android_native_app_glue.h>
 
 #include <errno.h>
@@ -200,7 +198,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
         case APP_CMD_GAINED_FOCUS:
             // When our app gains focus, we start monitoring the accelerometer.
             engine->animating = 1;
-            ejoy2d_win_resume();
             break;
         case APP_CMD_LOST_FOCUS:
             // Also stop animating.
