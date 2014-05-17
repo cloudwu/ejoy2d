@@ -3,7 +3,12 @@
 
 #include <lua.h>
 
-struct game;
+struct game {
+	lua_State *L;
+	float real_time;
+	float logic_time;
+};
+
 
 struct game * ejoy2d_game();
 void ejoy2d_game_exit(struct game *);
@@ -19,8 +24,11 @@ void ejoy2d_game_gesture(struct game *, int type,
                          double x1, double y1, double x2, double y2, int s);
 void
 ejoy2d_game_message(struct game* G,int id_, const char* state, const char* data);
+void ejoy2d_game_resume(struct game* G);
 
 void
 ejoy2d_call_lua(lua_State *L, int n, int r);
+
+
 
 #endif
