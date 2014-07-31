@@ -64,7 +64,7 @@ bool screen_is_visible(float x,float y)
 bool screen_is_poly_invisible(const float* points,int len,int stride)
 {
 	int i =0;
-	///æµ‹è¯•åœ¨xçš„å·¦è¾¹
+	///²âÊÔÔÚxµÄ×ó±ß
 	bool invisible = true;
 	for(i =0; i < len && invisible;++i)
 	{
@@ -74,7 +74,7 @@ bool screen_is_poly_invisible(const float* points,int len,int stride)
 	if(invisible)
 		return true;
 	
-	//æµ‹è¯•xè½´çš„å³è¾¹
+	//²âÊÔxÖáµÄÓÒ±ß
 	invisible = true;
 	for(i =0; i < len && invisible;++i)
 	{
@@ -84,7 +84,7 @@ bool screen_is_poly_invisible(const float* points,int len,int stride)
 	if(invisible)
 		return true;
 
-	///æµ‹è¯•åœ¨yçš„ä¸Šè¾¹
+	///²âÊÔÔÚyµÄÉÏ±ß
 	invisible = true;
 	for(i =0; i < len && invisible;++i)
 	{
@@ -94,7 +94,7 @@ bool screen_is_poly_invisible(const float* points,int len,int stride)
 	if(invisible)
 		return true;
 	
-	//æµ‹è¯•yè½´çš„ä¸‹è¾¹
+	//²âÊÔyÖáµÄÏÂ±ß
 	invisible = true;
 	for(i =0; i < len && invisible;++i)
 	{
