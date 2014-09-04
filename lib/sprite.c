@@ -710,10 +710,19 @@ panel_aabb(struct pack_pannel *panel, struct srt *srt, struct matrix *ts, int aa
 	poly_aabb(4, point, srt, ts, aabb);
 }
 
+static struct matrix * inherit_trans_mat(struct sprite *s) {
+    if (!s->parent) {
+        return NULL;
+    } else {
+        struct matrix temp;
+        return mat_mul(&(s->in_mat), inherit_trans_mat(s->parent), &temp);
+    }
+}
+
 static int
 child_aabb(struct sprite *s, struct srt *srt, struct matrix * mat, int aabb[4]) {
-	struct matrix temp;
-	struct matrix *t = mat_mul(s->t.mat, mat, &temp);
+	struct matrix *t = inherit_trans_mat(s);
+
 	switch (s->type) {
 	case TYPE_PICTURE:
 		quad_aabb(s->s.pic, srt, t, aabb);
@@ -745,9 +754,7 @@ child_aabb(struct sprite *s, struct srt *srt, struct matrix * mat, int aabb[4]) 
 		if (child == NULL || child->visible == false) {
 			continue;
 		}
-		struct matrix temp2;
-		struct matrix *ct = mat_mul(pp->t.mat, t, &temp2);
-		if (child_aabb(child, srt, ct, aabb))
+		if (child_aabb(child, srt, NULL, aabb))
 			break;
 	}
 	return 0;

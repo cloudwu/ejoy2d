@@ -149,8 +149,15 @@ update_message(struct sprite * s, struct sprite_pack * pack, int parentid, int c
 	struct pack_frame pframe = ani->frame[frame];
 	int i = 0;
 	for (; i < pframe.n; i++) {
-		if (pframe.part[i].component_id == componentid && pframe.part[i].touchable) {
-			s->message = true;
+		if (pframe.part[i].component_id == componentid) {
+			if (pframe.part[i].touchable) {
+				s->message = true;
+			}
+			if (pframe.part[i].t.mat) {
+				s->in_mat = *(pframe.part[i].t.mat);
+			} else {
+				matrix_identity(&s->in_mat);
+			}
 			return;
 		}
 	}

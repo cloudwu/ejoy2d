@@ -28,6 +28,7 @@ struct sprite {
 		struct matrix *mat;
 	} s;
 	struct matrix mat;
+	struct matrix in_mat;
 	int start_frame;
 	int total_frame;
 	int frame;
