@@ -29,6 +29,7 @@ newlabel(lua_State *L, struct pack_label *label) {
 	s->t.program = PROGRAM_DEFAULT;
 	s->message = false;
 	s->visible = true;
+	s->multimount = false;
 	s->name = NULL;
 	s->id = 0;
 	s->type = TYPE_LABEL;
@@ -148,8 +149,15 @@ update_message(struct sprite * s, struct sprite_pack * pack, int parentid, int c
 	struct pack_frame pframe = ani->frame[frame];
 	int i = 0;
 	for (; i < pframe.n; i++) {
-		if (pframe.part[i].component_id == componentid && pframe.part[i].touchable) {
-			s->message = true;
+		if (pframe.part[i].component_id == componentid) {
+			if (pframe.part[i].touchable) {
+				s->message = true;
+			}
+			if (pframe.part[i].t.mat) {
+				s->in_mat = *(pframe.part[i].t.mat);
+			} else {
+				matrix_identity(&s->in_mat);
+			}
 			return;
 		}
 	}
@@ -157,7 +165,7 @@ update_message(struct sprite * s, struct sprite_pack * pack, int parentid, int c
 
 static struct sprite *
 newanchor(lua_State *L) {
-	int sz = sizeof(struct sprite) + sizeof(struct matrix);
+	int sz = sizeof(struct sprite) + sizeof(struct anchor_data);
 	struct sprite * s = (struct sprite *)lua_newuserdata(L, sz);
 	s->parent = NULL;
 	s->t.mat = NULL;
@@ -166,11 +174,14 @@ newanchor(lua_State *L) {
 	s->t.program = PROGRAM_DEFAULT;
 	s->message = false;
 	s->visible = false;	// anchor is invisible by default
+	s->multimount = false;
 	s->name = NULL;
 	s->id = ANCHOR_ID;
 	s->type = TYPE_ANCHOR;
-	s->ps = NULL;
-	s->s.mat = (struct matrix *)(s+1);
+	s->data.anchor = (struct anchor_data *)(s+1);
+	s->data.anchor->ps = NULL;
+	s->data.anchor->pic = NULL;
+	s->s.mat = &s->data.anchor->mat;
 	matrix_identity(s->s.mat);
 
 	return s;
@@ -198,10 +209,10 @@ newsprite(lua_State *L, struct sprite_pack *pack, int id) {
 			lua_setuservalue(L, -3);	// set uservalue for sprite
 		}
 		struct sprite *c = newsprite(L, pack, childid);
-		c->name = sprite_childname(s, i);
-		sprite_mount(s, i, c);
-		update_message(c, pack, id, i, s->frame);
 		if (c) {
+			c->name = sprite_childname(s, i);
+			sprite_mount(s, i, c);
+			update_message(c, pack, id, i, s->frame);
 			lua_rawseti(L, -2, i+1);
 		}
 	}
@@ -585,6 +596,16 @@ lsetadditive(lua_State *L) {
 	return 0;
 }
 
+static int
+lgetparent(lua_State *L) {
+	struct sprite *s = self(L);
+	if (s->parent == NULL)
+		return 0;
+	lua_getuservalue(L, 1);
+	lua_rawgeti(L, -1, 0);
+	return 1;
+}
+
 static void
 lgetter(lua_State *L) {
 	luaL_Reg l[] = {
@@ -600,8 +621,9 @@ lgetter(lua_State *L) {
 		{"message", lgetmessage },
 		{"matrix", lgetmat },
 		{"world_matrix", lgetwmat },
-		{"parent_name", lgetparentname },
-		{"has_parent", lhasparent },
+		{"parent_name", lgetparentname },	// todo: maybe unused , use parent instead
+		{"has_parent", lhasparent },	// todo: maybe unused , use parent instead
+		{"parent", lgetparent },
 		{NULL, NULL},
 	};
 	luaL_newlib(L,l);
@@ -627,6 +649,35 @@ lsetter(lua_State *L) {
 	luaL_newlib(L,l);
 }
 
+static void
+get_reftable(lua_State *L, int index) {
+	lua_getuservalue(L, index);
+	if (lua_isnil(L, -1)) {
+		lua_pop(L, 1);
+		lua_createtable(L, 0, 1);
+		lua_pushvalue(L, -1);
+		lua_setuservalue(L, index);
+	}
+}
+
+static void
+ref_parent(lua_State *L, int index, int parent) {
+	get_reftable(L, index);
+	lua_pushvalue(L, parent);
+	lua_rawseti(L, -2, 0);	// set self to uservalue[0] (parent)
+	lua_pop(L, 1);
+}
+
+static void
+fetch_parent(lua_State *L, int index) {
+	lua_getuservalue(L, 1);
+	lua_rawgeti(L, -1, index+1);
+	// A child may not exist, but the name is valid. (empty dummy child)
+	if (!lua_isnil(L, -1)) {
+		ref_parent(L, lua_gettop(L), 1);
+	}
+}
+
 static int
 lfetch(lua_State *L) {
 	struct sprite *s = self(L);
@@ -634,28 +685,47 @@ lfetch(lua_State *L) {
 	int index = sprite_child(s, name);
 	if (index < 0)
 		return 0;
-	lua_getuservalue(L, 1);
-	lua_rawgeti(L, -1, index+1);
+	if (!s->multimount)	{ // multimount has no parent
+		fetch_parent(L, index);
+	}
 
 	return 1;
 }
 
 static int
 lfetch_by_index(lua_State *L) {
-  struct sprite *s = self(L);
-  if (s->type != TYPE_ANIMATION) {
-    return luaL_error(L, "Only animation can fetch by index");
-  }
-  int index = (int)luaL_checkinteger(L, 2);
-  struct pack_animation *ani = s->s.ani;
-  if (index < 0 || index >= ani->component_number) {
-    return luaL_error(L, "Component index out of range:%d", index);
-  }
-  
-  lua_getuservalue(L, 1);
-  lua_rawgeti(L, -1, index+1);
-  
-  return 1;
+	struct sprite *s = self(L);
+	if (s->type != TYPE_ANIMATION) {
+		return luaL_error(L, "Only animation can fetch by index");
+	}
+	int index = (int)luaL_checkinteger(L, 2);
+	struct pack_animation *ani = s->s.ani;
+	if (index < 0 || index >= ani->component_number) {
+		return luaL_error(L, "Component index out of range:%d", index);
+	}
+
+	fetch_parent(L, index);
+
+	return 1;
+}
+
+static void
+unlink_parent(lua_State *L, struct sprite * child, int idx) {
+	lua_getuservalue(L, idx);	// reftable
+	lua_rawgeti(L, -1, 0);	// reftable parent
+	struct sprite * parent = lua_touserdata(L, -1);
+	if (parent == NULL) {
+		luaL_error(L, "No parent object");
+	}
+	int index = sprite_child_ptr(parent, child);
+	if (index < 0) {
+		luaL_error(L, "Invalid child object");
+	}
+	lua_getuservalue(L, -1);	// reftable parent parentref
+	lua_pushnil(L);
+	lua_rawseti(L, -2, index+1);
+	lua_pop(L, 3);
+	sprite_mount(parent, index, NULL);
 }
 
 static int
@@ -667,20 +737,47 @@ lmount(lua_State *L) {
 		return luaL_error(L, "No child name %s", name);
 	}
 	lua_getuservalue(L, 1);
+
 	struct sprite * child = (struct sprite *)lua_touserdata(L, 3);
+
+	lua_rawgeti(L, -1, index+1);
+	if (lua_isnil(L, -1)) {
+		lua_pop(L, 1);
+	} else {
+		struct sprite * c = lua_touserdata(L, -1);
+		if (c == child) {
+			// mount not change
+			return 0;
+		}
+		if (!c->multimount) {
+			// try to remove parent ref
+			lua_getuservalue(L, -1);
+			if (lua_istable(L, -1)) {
+				lua_pushnil(L);
+				lua_rawseti(L, -2, 0);
+			}
+			lua_pop(L, 2);
+		} else {
+			lua_pop(L, 1);
+		}
+	}
+
 	if (child == NULL) {
 		sprite_mount(s, index, NULL);
 		lua_pushnil(L);
 		lua_rawseti(L, -2, index+1);
 	} else {
 		if (child->parent) {
-			struct sprite* p = child->parent;
-			sprite_mount(p, index, NULL);
-			//return luaL_error(L, "Can't mount sprite %p twice,pre parent:%p: %s", child,child->parent,child->name);
+			unlink_parent(L, child, 3);
 		}
 		sprite_mount(s, index, child);
 		lua_pushvalue(L, 3);
 		lua_rawseti(L, -2, index+1);
+
+		if (!child->multimount)	{ // multimount has no parent
+			// set child's new parent
+			ref_parent(L, 3, 1);
+		}
 	}
 	return 0;
 }
@@ -758,11 +855,18 @@ lset_anchor_particle(lua_State *L) {
 	struct sprite *s = self(L);
 	if (s->type != TYPE_ANCHOR)
 		return luaL_error(L, "need a anchor");
-	s->ps = (struct particle_system*)lua_touserdata(L, 2);
+
+	// ref the ps object and pic to anchor object
+	get_reftable(L, 1);
+	lua_pushvalue(L, 2);
+	lua_rawseti(L, -2, 0);
+	lua_pop(L, 1);
+
+	s->data.anchor->ps = (struct particle_system*)lua_touserdata(L, 2);
 	struct sprite *p = (struct sprite *)lua_touserdata(L, 3);
-	if (p==NULL)
-		return luaL_error(L, "need a sprite");
-	s->data.mask = p->s.pic;
+	if (p==NULL || p->type != TYPE_PICTURE)
+		return luaL_error(L, "need a picture sprite");
+	s->data.anchor->pic = p->s.pic;
 
 	return 0;
 }
@@ -1077,11 +1181,73 @@ lmethod(lua_State *L) {
 	luaL_setfuncs(L,l2,nk);
 }
 
+static int
+lnewproxy(lua_State *L) {
+	static struct pack_part part = {
+		{
+			NULL,	// mat
+			0xffffffff,	// color
+			0,	// additive
+			PROGRAM_DEFAULT,
+			0,	// _dummy
+		},	// trans
+		0,	// component_id
+		0,	// touchable
+	};
+	static struct pack_frame frame = {
+		&part,
+		1,	// n
+		0,	// _dummy
+	};
+	static struct pack_action action = {
+		NULL,	// name
+		1,	// number
+		0,	// start_frame
+	};
+	static struct pack_animation ani = {
+		&frame,
+		&action,
+		1,	// frame_number
+		1,	// action_number
+		1,	// component_number
+		0,	// _dummy
+		{{
+			"proxy",	// name
+			0,	// id
+			0,	// _dummy
+		}},
+	};
+	struct sprite * s = lua_newuserdata(L, sizeof(struct sprite));
+	lua_newtable(L);
+	lua_setuservalue(L, -2);
+
+	s->parent = NULL;
+	s->s.ani = &ani;
+	s->t.mat = NULL;
+	s->t.color = 0xffffffff;
+	s->t.additive = 0;
+	s->t.program = PROGRAM_DEFAULT;
+	s->message = false;
+	s->visible = true;
+	s->multimount = true;
+	s->name = NULL;
+	s->id = 0;
+	s->type = TYPE_ANIMATION;
+	s->start_frame = 0;
+	s->total_frame = 0;
+	s->frame = 0;
+	s->data.children[0] = NULL;
+	sprite_action(s, NULL);
+
+	return 1;
+}
+
 int
 ejoy2d_sprite(lua_State *L) {
 	luaL_Reg l[] ={
 		{ "new", lnew },
 		{ "label", lnewlabel },
+		{ "proxy", lnewproxy },
 		{ "label_gen_outline", lgenoutline },
         { "enable_visible_test", lenable_visible_test },
 		{ NULL, NULL },

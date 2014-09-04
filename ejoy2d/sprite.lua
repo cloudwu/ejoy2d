@@ -78,7 +78,7 @@ function test(...)
 	end
 end
 
-function fetch_by_index(spr, index)
+local function fetch_by_index(spr, index)
 	local cobj = method_fetch_by_index(spr, index)
 	if cobj then
 		return debug.setmetatable(cobj, sprite_meta)
@@ -109,6 +109,11 @@ function sprite.label(tbl)
 		end
 		return l
 	end
+end
+
+function sprite.proxy()
+	local cobj = c.proxy()
+	return debug.setmetatable(cobj, sprite_meta)
 end
 
 return sprite

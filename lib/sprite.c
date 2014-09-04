@@ -54,16 +54,16 @@ sprite_drawquad(struct pack_picture *picture, struct pack_picture *mask, const s
 		}
 		if(!enable_visible_test || !screen_is_poly_invisible(vb,4,4))
 		{
-            if (mask != NULL) {
-                float tx = mask->rect[0].texture_coord[0];
-                float ty = mask->rect[0].texture_coord[1];
-                texture_coord(mask->rect[0].texid, &tx, &ty);
-                float delta_tx = tx - vb[2];
-                float delta_ty = ty - vb[3];
-                shader_mask(delta_tx, delta_ty);
-            }
+			if (mask != NULL) {
+					float tx = mask->rect[0].texture_coord[0];
+					float ty = mask->rect[0].texture_coord[1];
+					texture_coord(mask->rect[0].texid, &tx, &ty);
+					float delta_tx = tx - vb[2];
+					float delta_ty = ty - vb[3];
+					shader_mask(delta_tx, delta_ty);
+			}
 			shader_draw(vb, arg->color);
-        }
+		}
 	}
 }
 
@@ -163,10 +163,10 @@ sprite_init(struct sprite * s, struct sprite_pack * pack, int id, int sz) {
 	s->t.program = PROGRAM_DEFAULT;
 	s->message = false;
 	s->visible = true;
+	s->multimount = false;
 	s->name = NULL;
 	s->id = id;
 	s->type = pack->type[id];
-	s->ps = NULL;
 	if (s->type == TYPE_ANIMATION) {
 		struct pack_animation * ani = (struct pack_animation *)pack->data[id];
 		s->s.ani = ani;
@@ -183,7 +183,7 @@ sprite_init(struct sprite * s, struct sprite_pack * pack, int id, int sz) {
 		s->start_frame = 0;
 		s->total_frame = 0;
 		s->frame = 0;
-		s->data.rich_text = NULL;
+		memset(&s->data, 0, sizeof(s->data));
 		assert(sz >= sizeof(struct sprite) - sizeof(struct sprite *));
 		if (s->type == TYPE_PANNEL) {
 			struct pack_pannel * pp = (struct pack_pannel *)pack->data[id];
@@ -200,13 +200,15 @@ sprite_mount(struct sprite *parent, int index, struct sprite *child) {
 	struct sprite * oldc = parent->data.children[index];
 	if (oldc) {
 		oldc->parent = NULL;
-    oldc->name = NULL;
+		oldc->name = NULL;
 	}
 	parent->data.children[index] = child;
 	if (child) {
 		assert(child->parent == NULL);
-		child->name = ani->component[index].name;
-		child->parent = parent;
+		if (!child->multimount) {
+			child->name = ani->component[index].name;
+			child->parent = parent;
+		}
 		if (oldc && oldc->type == TYPE_ANCHOR)
 			child->message = oldc->message;
 	}
@@ -238,6 +240,20 @@ sprite_child(struct sprite *s, const char * childname) {
 				return i;
 			}
 		}
+	}
+	return -1;
+}
+
+int
+sprite_child_ptr(struct sprite *s, struct sprite *child) {
+	if (s->type != TYPE_ANIMATION)
+		return -1;
+	struct pack_animation *ani = s->s.ani;
+	int i;
+	for (i=0;i<ani->component_number;i++) {
+		struct sprite * c = s->data.children[i];
+		if (c == child)
+			return i;
 	}
 	return -1;
 }
@@ -403,6 +419,7 @@ label_pos(int m[6], struct pack_label * l, struct srt *srt, const struct sprite_
 	pos[1] = (int)((c_x * m[1] + c_y * m[3]) / 1024 + m[5])/SCREEN_SCALE;
 }
 
+/*
 static void
 panel_pos(int m[6], struct pack_pannel * l, struct srt *srt, const struct sprite_trans *arg, int pos[2]) {
 	float c_x = l->width * SCREEN_SCALE / 2.0;
@@ -410,7 +427,7 @@ panel_pos(int m[6], struct pack_pannel * l, struct srt *srt, const struct sprite
 	pos[0] = (int)((c_x * m[0] + c_y * m[2]) / 1024 + m[4])/SCREEN_SCALE;
 	pos[1] = (int)((c_x * m[1] + c_y * m[3]) / 1024 + m[5])/SCREEN_SCALE;
 }
-
+*/
 static void
 picture_pos(int m[6], struct pack_picture *picture, const struct srt *srt,  const struct sprite_trans *arg, int pos[2]) {
 	int max_x = INT_MIN;
@@ -492,12 +509,10 @@ child_pos(struct sprite *s, struct srt *srt, struct sprite_trans *ts, struct spr
 	return 1;
 }
 
-void
-sprite_drawparticle(struct sprite *s, struct particle_system *ps, const struct srt *srt) {
+static void
+drawparticle(struct sprite *s, struct particle_system *ps, struct pack_picture *pic, const struct srt *srt) {
 	int n = ps->particleCount;
 	int i;
-	struct sprite_trans temp;
-	struct matrix temp_matrix;
 	struct matrix *old_m = s->t.mat;
 	uint32_t old_c = s->t.color;
 
@@ -509,7 +524,7 @@ sprite_drawparticle(struct sprite *s, struct particle_system *ps, const struct s
 
 		s->t.mat = mat;
 		s->t.color = color;
-		sprite_drawquad(s->data.mask, NULL, NULL, &s->t);
+		sprite_drawquad(pic, NULL, NULL, &s->t);
 	}
 	shader_defaultblend();
 
@@ -539,9 +554,9 @@ draw_child(struct sprite *s, struct srt *srt, struct sprite_trans * ts) {
 		}
 		return 0;
 	case TYPE_ANCHOR:
-		if (s->ps){
+		if (s->data.anchor->ps){
 			switch_program(t, PROGRAM_PICTURE);
-			sprite_drawparticle(s, s->ps, srt);
+			drawparticle(s, s->data.anchor->ps, s->data.anchor->pic, srt);
 		}
 		anchor_update(s, srt, t);
 		return 0;
@@ -695,10 +710,19 @@ panel_aabb(struct pack_pannel *panel, struct srt *srt, struct matrix *ts, int aa
 	poly_aabb(4, point, srt, ts, aabb);
 }
 
+static struct matrix * inherit_trans_mat(struct sprite *s) {
+    if (!s->parent) {
+        return NULL;
+    } else {
+        struct matrix temp;
+        return mat_mul(&(s->in_mat), inherit_trans_mat(s->parent), &temp);
+    }
+}
+
 static int
 child_aabb(struct sprite *s, struct srt *srt, struct matrix * mat, int aabb[4]) {
-	struct matrix temp;
-	struct matrix *t = mat_mul(s->t.mat, mat, &temp);
+	struct matrix *t = inherit_trans_mat(s);
+
 	switch (s->type) {
 	case TYPE_PICTURE:
 		quad_aabb(s->s.pic, srt, t, aabb);
@@ -730,9 +754,7 @@ child_aabb(struct sprite *s, struct srt *srt, struct matrix * mat, int aabb[4]) 
 		if (child == NULL || child->visible == false) {
 			continue;
 		}
-		struct matrix temp2;
-		struct matrix *ct = mat_mul(pp->t.mat, t, &temp2);
-		if (child_aabb(child, srt, ct, aabb))
+		if (child_aabb(child, srt, NULL, aabb))
 			break;
 	}
 	return 0;

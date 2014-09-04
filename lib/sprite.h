@@ -8,6 +8,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+struct anchor_data {
+	struct particle_system *ps;
+	struct pack_picture *pic;
+	struct matrix mat;
+};
+
 struct sprite {
 	struct sprite * parent;
 	uint16_t type;
@@ -22,23 +28,24 @@ struct sprite {
 		struct matrix *mat;
 	} s;
 	struct matrix mat;
+	struct matrix in_mat;
 	int start_frame;
 	int total_frame;
 	int frame;
 	bool visible;
 	bool message;
+	bool multimount;
 	const char *name;	// name for parent
 	union {
 		struct sprite * children[1];
 		struct rich_text * rich_text;
 		int scissor;
 		struct pack_picture *mask;  //for picture only
+		struct anchor_data *anchor;
 	} data;
-	struct particle_system *ps;
 };
 
 void sprite_drawquad(struct pack_picture *picture, struct pack_picture *mask, const struct srt *srt, const struct sprite_trans *arg);
-void sprite_drawparticle(struct sprite *s, struct particle_system *ps, const struct srt *srt);
 void sprite_drawpolygon(struct pack_polygon *poly, const struct srt *srt, const struct sprite_trans *arg);
 
 // sprite_size must be call before sprite_init
@@ -54,6 +61,7 @@ struct sprite * sprite_test(struct sprite *, struct srt *srt, int x, int y);
 
 // return child index, -1 means not found
 int sprite_child(struct sprite *, const char * childname);
+int sprite_child_ptr(struct sprite *, struct sprite *child);
 // return sprite id in pack, -1 for end
 int sprite_component(struct sprite *, int index);
 const char * sprite_childname(struct sprite *, int index);
