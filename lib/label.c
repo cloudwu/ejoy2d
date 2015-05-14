@@ -413,6 +413,7 @@ label_char_size(struct pack_label* l, const char* chr, int* width, int* height, 
 	struct font_context ct = char_size(*unicode, utf8, l->size, l->edge);
 	*width = ct.w + l->space_w;
 	*height = ct.h + l->space_h;
+	font_release(&ct);
 	return len;
 }
 
@@ -437,6 +438,7 @@ label_size(const char *str, struct pack_label * l, int* width, int* height) {
 			if (w > max_w) max_w = w;
 			w = 0;
 		}
+		font_release(&ct);
 	}
 
 	max_h += h;
