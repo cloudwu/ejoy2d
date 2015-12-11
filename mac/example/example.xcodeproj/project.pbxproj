@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		3F8A328719C16FCD00DD18FA /* lrenderbuffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A328219C16FCD00DD18FA /* lrenderbuffer.c */; };
 		3F8A328819C16FCD00DD18FA /* renderbuffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A328519C16FCD00DD18FA /* renderbuffer.c */; };
+		A858365B1C1AC7D80004F6F6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A858365A1C1AC7D80004F6F6 /* CoreVideo.framework */; };
+		A858365C1C1AC7E30004F6F6 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4816EFA18CF3C9400A0199B /* Cocoa.framework */; };
+		A858365E1C1AC7EA0004F6F6 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A858365D1C1AC7EA0004F6F6 /* IOKit.framework */; };
 		CD66E7A31B340F5B003CFB5A /* ejoy2d in Resources */ = {isa = PBXBuildFile; fileRef = 3F9C3AD119C17B210081BC5F /* ejoy2d */; };
 		CD66E7A41B340F60003CFB5A /* examples in Resources */ = {isa = PBXBuildFile; fileRef = 3F9C3AD019C17A470081BC5F /* examples */; };
 		CDFC3AB91B34094A0095671C /* lgeometry.c in Sources */ = {isa = PBXBuildFile; fileRef = CDFC3AAD1B34094A0095671C /* lgeometry.c */; };
@@ -80,6 +83,8 @@
 		3F8A328619C16FCD00DD18FA /* renderbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = renderbuffer.h; sourceTree = "<group>"; };
 		3F9C3AD019C17A470081BC5F /* examples */ = {isa = PBXFileReference; lastKnownFileType = folder; name = examples; path = ../../examples; sourceTree = "<group>"; };
 		3F9C3AD119C17B210081BC5F /* ejoy2d */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ejoy2d; path = ../../ejoy2d; sourceTree = "<group>"; };
+		A858365A1C1AC7D80004F6F6 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		A858365D1C1AC7EA0004F6F6 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		CDFC3AA91B34094A0095671C /* lgeometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lgeometry.h; sourceTree = "<group>"; };
 		CDFC3AAA1B34094A0095671C /* material.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = material.h; sourceTree = "<group>"; };
 		CDFC3AAB1B34094A0095671C /* screenshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screenshot.h; sourceTree = "<group>"; };
@@ -205,6 +210,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A858365E1C1AC7EA0004F6F6 /* IOKit.framework in Frameworks */,
+				A858365C1C1AC7E30004F6F6 /* Cocoa.framework in Frameworks */,
+				A858365B1C1AC7D80004F6F6 /* CoreVideo.framework in Frameworks */,
 				CDFC3AC21B3409950095671C /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -251,6 +259,8 @@
 		F4816EF918CF3C9400A0199B /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A858365D1C1AC7EA0004F6F6 /* IOKit.framework */,
+				A858365A1C1AC7D80004F6F6 /* CoreVideo.framework */,
 				CDFC3AC11B3409950095671C /* OpenGL.framework */,
 				F4816FFA18CF4AC200A0199B /* GLUT.framework */,
 				F4816EFA18CF3C9400A0199B /* Cocoa.framework */,
@@ -606,6 +616,15 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/usr/X11R6/include,
+					/usr/include,
+					/usr/local/include,
+					/usr/X11R6/include/freetype2,
+					/usr/local/include/freetype2,
+				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
@@ -648,6 +667,15 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/usr/X11R6/include,
+					/usr/include,
+					/usr/local/include,
+					/usr/X11R6/include/freetype2,
+					/usr/local/include/freetype2,
+				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_LDFLAGS = (
