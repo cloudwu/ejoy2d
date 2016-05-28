@@ -1,0 +1,7 @@
+"local path, script = ...\n"
+"require(\"ejoy2d.framework\").WorkDir = ''\n"
+"assert(script, 'I need a script name')\n"
+"path = string.match(path,[[(.*)\\[^\\]*$]])\n"
+"package.path = path .. [[\\?.lua;]] .. path .. [[\\?\\init.lua;.\\?.lua;.\\?\\init.lua]]\n"
+"local f = assert(loadfile(script))\n"
+"f(script)\n"
