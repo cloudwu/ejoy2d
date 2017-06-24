@@ -7,3 +7,5 @@ ej2d.dSYM/*
 *.ilk
 mac/example/example.xcodeproj/xcuserdata
 mac/example/example.xcodeproj/project.xcworkspace/xcuserdata
+msvc/build/ejoy2d.VC.VC.opendb
+msvc/build/ejoy2d.VC.db
