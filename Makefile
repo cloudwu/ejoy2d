@@ -113,7 +113,7 @@ macosx : CC := clang
 macosx : OS := MACOSX
 macosx : TARGET := ej2d
 macosx : CFLAGS += -I/usr/include $(shell freetype-config --cflags) -D __MACOSX
-macosx : LDFLAGS += -lglfw3  -framework OpenGL -lfreetype -lm -ldl
+macosx : LDFLAGS += -L/usr/local/lib -lglfw3  -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -lfreetype -lm -ldl
 macosx : SRC += mac/example/example/window.c posix/winfw.c mac/example/example/winfont.c
 
 macosx : $(SRC) ej2d
