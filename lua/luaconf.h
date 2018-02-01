@@ -727,7 +727,9 @@
 ** without modifying the main part of the file.
 */
 
-
+#if ANDROID 
+#define getlocaledecpoint() '.' 
+#endif 
 
 
 
