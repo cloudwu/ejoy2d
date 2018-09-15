@@ -3,6 +3,10 @@ local ej = require "ejoy2d"
 local fw = require "ejoy2d.framework"
 local pack = require "ejoy2d.simplepackage"
 local matrix = require "ejoy2d.matrix"
+local network = require "ejoy2d.network.c"
+
+local fd = assert(network.connect("127.0.0.1", 8888))
+network.send(fd, "11111")
 
 local config = require "examples.asset.bird_config"
 
@@ -445,6 +449,7 @@ end
 function game.touch(what, x, y)
   if what == "BEGIN" then
     bird:touch()
+
   end
 end
 

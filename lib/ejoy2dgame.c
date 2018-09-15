@@ -7,6 +7,7 @@
 #include "ejoy2dgame.h"
 #include "fault.h"
 #include "shader.h"
+#include "network.c"
 #include "texture.h"
 #include "ppm.h"
 #include "spritepack.h"
@@ -113,6 +114,7 @@ ejoy2d_init(lua_State *L) {
 	lua_setglobal(L , "OS");
 
 	luaL_requiref(L, "ejoy2d.shader.c", ejoy2d_shader, 0);
+	luaL_requiref(L, "ejoy2d.network.c", ejoy2d_network, 0);
 	luaL_requiref(L, "ejoy2d.framework", ejoy2d_framework, 0);
 	luaL_requiref(L, "ejoy2d.ppm", ejoy2d_ppm, 0);
 	luaL_requiref(L, "ejoy2d.spritepack.c", ejoy2d_spritepack, 0);

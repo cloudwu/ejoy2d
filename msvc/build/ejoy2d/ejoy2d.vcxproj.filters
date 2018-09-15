@@ -104,6 +104,105 @@
     <ClCompile Include="..\..\..\lib\lgeometry.c">
       <Filter>lib\src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\lua\lapi.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lauxlib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lbaselib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lbitlib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lcode.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lcorolib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lctype.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ldblib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ldebug.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ldo.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ldump.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lfunc.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lgc.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\linit.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\liolib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\llex.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lmathlib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lmem.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\loadlib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lobject.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lopcodes.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\loslib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lparser.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lstate.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lstring.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lstrlib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ltable.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ltablib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\ltm.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lundump.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lutf8lib.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lvm.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua\lzio.c">
+      <Filter>lib\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\stdbool.h">
@@ -201,6 +300,84 @@
     </ClInclude>
     <ClInclude Include="..\..\..\lib\render\render.h">
       <Filter>lib\src\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lapi.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lauxlib.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lcode.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lctype.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\ldebug.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\ldo.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lfunc.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lgc.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\llex.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\llimits.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lmem.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lobject.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lopcodes.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lparser.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lprefix.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lstate.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lstring.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\ltable.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\ltm.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lua.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lua.hpp">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\luaconf.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lualib.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lundump.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lvm.h">
+      <Filter>lib\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua\lzio.h">
+      <Filter>lib\inc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
