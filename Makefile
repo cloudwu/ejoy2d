@@ -28,7 +28,8 @@ lib/lparticle.c \
 lib/scissor.c \
 lib/renderbuffer.c \
 lib/lrenderbuffer.c \
-lib/lgeometry.c
+lib/lgeometry.c \
+lib/network.c
 
 SRC := $(EJOY2D) $(RENDER)
 
@@ -113,7 +114,7 @@ macosx : CC := clang
 macosx : OS := MACOSX
 macosx : TARGET := ej2d
 macosx : CFLAGS += -I/usr/include $(shell freetype-config --cflags) -D __MACOSX
-macosx : LDFLAGS += -lglfw3  -framework OpenGL -lfreetype -lm -ldl
+macosx : LDFLAGS += -lglfw  -framework OpenGL -lfreetype -lm -ldl
 macosx : SRC += mac/example/example/window.c posix/winfw.c mac/example/example/winfont.c
 
 macosx : $(SRC) ej2d
